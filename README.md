@@ -1,5 +1,5 @@
 #Who
-[http://github.com/PageVault/lambinator/blob/master/lambinator.png]
+![alt text](https://github.com/PageVault/lambinator/blob/master/lambinator.png "Lambinator Logo")
 
 #What
 
