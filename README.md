@@ -1,5 +1,5 @@
 #Who
-![alt text](https://github.com/PageVault/lambinator/blob/master/lambinator.png "Lambinator Logo")
+![alt text](https://s3.amazonaws.com/resources.page-vault.com/lambinator.png "Lambinator Logo")
 
 #What
 
