@@ -27,10 +27,11 @@ Lambinator currently handles the first two scenarios, and will eventually handle
 `npm install lambinator`
 
 ##Basic Usage
-`lamb init` -- initialize a directory with lambinator assets (.env, lambinator.json)
-`lamb run my-function-name` -- run a function locally 
-`lamb deploy my-function-name --env development` -- deploy a function to AWS Lambda
-`lamb get registered-function-name` -- download a function from registry for editing
+* `lamb new my-function-name` -- create a new function directory with lambinator assets (.env, lambinator.json, my-function-name.js)
+* `lamb run my-function-name` -- run a function locally 
+* `lamb deploy my-function-name --env development` -- deploy a function to AWS Lambda
+* _future_ `lamb list` -- list functions in lambinator registry
+* _future_ `lamb install registered-function-name` -- download a function from the lambinator registry for editing
 
 ##Detailed Usage
 Details to come!
