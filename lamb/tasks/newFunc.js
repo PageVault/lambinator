@@ -1,37 +1,34 @@
 var gulp          = require('gulp')
-    , gutil       = require('gulp-util')
-    , install     = require('gulp-install')
-    , zip         = require('gulp-zip')
     , rename      = require('gulp-rename')
     , replace     = require('gulp-replace')
-    , AWS         = require('aws-sdk')
     , fs          = require('fs-extra')
-    , path        = require('path')
-    , async       = require('async')
     , chalk       = require('chalk')
-    , pkg         = require(process.cwd() + '/package.json')
+    , path        = require('path')
     ;
 
-var init = function(func) {
+var main = function(func) {
   //create directory
-  fs.mkdirsSync('./' + func);
+  fs.ensureDirSync('./functions/' + func);
 
   //copy files and replace template text
-  gulp.src(['lamb/files/**','!lamb/files/.env.sample','!lamb/files/function-name.js'])
+  var devRoot = path.join(process.cwd(), 'lamb/files');
+  var runRoot = path.join(process.cwd(), 'node_modules/lamb/files');
+  var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot; 
+  gulp.src([lambRoot + '/**', '!' + lambRoot + '/.env.sample', '!' + lambRoot + '/function-name.js'])
     .pipe(replace('{{function-name}}', func))
     .pipe(gulp.dest('./functions/' + func));
 
   //copy env file and rename
-  gulp.src(['lamb/files/.env.sample'])
+  gulp.src([lambRoot + '/.env.sample'])
     .pipe(rename('.env'))
     .pipe(gulp.dest('./functions/' + func));
 
 
   //copy main function file and rename
-  gulp.src(['lamb/files/function-name.js'])
+  gulp.src([lambRoot + '/function-name.js'])
     .pipe(rename(func + '.js'))
     .pipe(gulp.dest('./functions/' + func));
 
 };
 
-module.exports = init;
+module.exports = main;

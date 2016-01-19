@@ -1,6 +1,6 @@
 {
-  "function-name":  "{{function-name}}",
-  "handler":        "{{function-name}}.handler",
+  "function-name":  "foo4",
+  "handler":        "foo4.handler",
   "description":    "",
   "memorySize":     128,
   "timeout":        10,

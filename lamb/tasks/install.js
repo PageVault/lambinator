@@ -1,7 +1,5 @@
-var gulp = require('gulp');
-
-var get = function(func) {
-  
+var main = function(func) {
+  console.log(chalk.red('not yet implemented'));
 };
 
-module.exports = get;
+module.exports = main;

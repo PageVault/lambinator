@@ -1,7 +1,5 @@
-var gulp = require('gulp');
-
-var list = function() {
-  console.log('in list');
+var main = function(func) {
+  console.log(chalk.red('not yet implemented'));
 };
 
-module.exports = list;
+module.exports = main;

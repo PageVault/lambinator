@@ -10,22 +10,12 @@ var Zip         = require('node-7z')
     , zip         = require('gulp-zip')
     ;
 
-    // , gutil       = require('gulp-util')
-    // , install     = require('gulp-install')
-    // , runSequence = require('run-sequence')
-    // , exec        = require('child_process').exec
-    // , EasyZip     = require('easy-zip').EasyZip
-    // , rename      = require('gulp-rename')
-
-require('dotenv').load();
-
 var data = {
   folderPath: null,   //e.g. ./functions/hello-world
   distPath: null,     //e.g. ./dist/hello-world
   environment: null   //e.g. staging
 };
 
-// var useShortcutForNpm = true;
   
 var clean = function(callback) {
   console.log('cleanup prep...');
@@ -44,31 +34,7 @@ var npm = function(callback) {
     function(err) { callback(err); }
   );
 
-  // fs.copy(
-  //   path.join(process.cwd(), 'node_modules'),
-  //   path.join(data.distPath, 'node_modules'),
-  //   function(err) { callback(err); }
-  // );
-
-  // if (fastMethod) {
-  //   console.log(chalk.red.bold('WARNING: using fastMethod for creating node_modules! Do not use for a production deploy!'));
-  //   gulp.src('./node_modules/**')
-  //     .pipe(gulp.dest(data.distPath + '/node_modules'))
-  // }
-  // else {
-  //   gulp.src('./package.json')
-  //     .pipe(gulp.dest(data.distPath + '/node_modules'))
-  //     .pipe(install({production: true}));
-  // }
 };
-
-// var copyCustomModules = function(callback) {
-//   console.log('copying custom modules...');
-//   fs.copySync(path.join(process.cwd(), 'custom_modules'), path.join(process.cwd(), 'node_modules'));
-//   fs.copy(path.join(process.cwd(), 'custom_modules'), path.join(data.distPath, 'node_modules'), callback);
-
-//   callback(null);
-// };
 
 var envFile = function(callback) {
   console.log('copying .env file...');
@@ -147,7 +113,7 @@ var gulpZipFiles = function(callback) {
 };
 
 var upload = function(callback) {
-  AWS.config.region = process.env.AWS_REGION;
+  // AWS.config.region = process.env.AWS_REGION ;
   var lambda = new AWS.Lambda();
   var functionName = data.environment + '-' + data.functionName;
   var zipFile = './dist/' + data.functionName + '.zip';
