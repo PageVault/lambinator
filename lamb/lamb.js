@@ -45,6 +45,17 @@ commander
 
 commander
   .version(packageJson.version)
+  .command('zip <function-name>')
+  .description('Zip a function for deployment to AWS Lambda manually')
+  .action(function (func, env) {
+    logHeader();
+    console.log(chalk.white.bold('deploying function: '), func, chalk.white.bold('to environment:'), env);
+    tasks.zip(func, 'zip');
+  });
+
+
+commander
+  .version(packageJson.version)
   .command('list')
   .description('Lists functions registered in the Lambinator Function Registry')
   .action(function () {

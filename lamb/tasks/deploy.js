@@ -1,13 +1,12 @@
-var Zip         = require('node-7z')
-    , AWS         = require('aws-sdk')
+var AWS           = require('aws-sdk')
     , fs          = require('fs-extra')
     , path        = require('path')
     , async       = require('async')
     , chalk       = require('chalk')
-    , pkg         = require(process.cwd() + '/package.json')
     , ncp         = require('ncp')
     , gulp        = require('gulp')
     , zip         = require('gulp-zip')
+    , pkg         = require(process.cwd() + '/package.json')
     ;
 
 var data = {
@@ -61,10 +60,15 @@ var makeDist = function(callback) {
   console.log('creating dist folder...');
 
   //copy any file dependencies
+  var devRoot = path.join(process.cwd(), 'dependencies');
+  var runRoot = path.join(process.cwd(), 'node_modules/lambinator/dependencies');
+  var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot; 
+
   if (data.dependencies) {
     data.dependencies.forEach(function(file) {
+      console.log('adding dependency:', file);
       var functionDependency = path.join(data.folderPath, file);
-      var globalDependency = path.join(process.cwd(), 'dependencies', file);
+      var globalDependency = path.join(lambRoot, file);
       
       console.log('functionDependency', functionDependency);
       console.log('globalDependency', globalDependency);
@@ -189,7 +193,7 @@ var upload = function(callback) {
   setTimeout(startUpload, 3000);  
 };
 
-var main = function(functionName, environment) {
+var main = function(functionName, environment, zipOnly) {
   var folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
   console.log('deploying function', folderPath);
   
@@ -199,15 +203,11 @@ var main = function(functionName, environment) {
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = environment;
   
+  var functionsToRun = [clean, npm, envFile, makeDist, gulpZipFiles];
+  if (!zipOnly) functionsToRun.push(upload);
+  
   //let the water fall baby
-  async.waterfall([
-    clean,
-    npm,
-    envFile,
-    makeDist,
-    gulpZipFiles,
-    upload
-  ], function(err, results) {
+  async.waterfall(functionsToRun, function(err, results) {
     if (err) {
       console.log('ERROR', err);
     }

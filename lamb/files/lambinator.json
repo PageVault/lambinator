@@ -1,11 +1,11 @@
 {
-  "function-name":  "{{function-name}}",
+  "functionName":  "{{function-name}}",
   "handler":        "{{function-name}}.handler",
   "description":    "",
   "memorySize":     128,
   "timeout":        10,
   "dependencies":   [],
-  "test-events": {
+  "testEvents": {
     "default": {
       "number": 123,
       "string": "my-string"
@@ -14,5 +14,5 @@
       
     }
   },
-  "default-event": "s3"
+  "defaultEvent": "s3"
 }
