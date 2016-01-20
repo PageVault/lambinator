@@ -76,11 +76,13 @@ var makeDist = function(callback) {
       
       //look in function directory for file
       if (fs.existsSync(functionDependency)) {
-        fs.createReadStream(functionDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
+        fs.copySync(functionDependency, path.join(data.distPath, file));
+        // fs.createReadStream(functionDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
       }
       //look in global dependencies folder
       else if (fs.existsSync(globalDependency)) {
-        fs.createReadStream(globalDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
+        fs.copySync(globalDependency, path.join(data.distPath, file));
+        // fs.createReadStream(globalDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
       }
     });
   }
