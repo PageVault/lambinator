@@ -7,6 +7,7 @@ var AWS           = require('aws-sdk')
     , gulp        = require('gulp')
     , zip         = require('gulp-zip')
     , gutil       = require('gulp-util')
+    , task        = require('gulp-task')
     , pkg         = require(process.cwd() + '/package.json')
     ;
 
@@ -107,13 +108,17 @@ var makeDist = function(callback) {
 //     .catch(callback);
 // };
 
-var gulpZipFiles = function(callback) {
+var zipFiles = function(callback) {
   gutil.log('zipping files...');
   try {
-    gulp.src(data.distPath + '/**/*')
-      .pipe(zip(data.functionName + '.zip'))
-      .pipe(gulp.dest('./dist'));
-    callback(null);
+    task.run(function() {
+      gulp.src(data.distPath + '/**/*')
+        .pipe(zip(data.functionName + '.zip'))
+        .pipe(gulp.dest('./dist'));
+    })
+      .then(function() {
+        callback(null);
+      });
   }
   catch(err) {
     callback(err);
@@ -217,7 +222,7 @@ var upload = function(callback) {
   };
 
   //having async issues with zip task completing -- wait a second before starting upload
-  setTimeout(startUpload, 3000);  
+  setTimeout(startUpload, 7000);  
 };
 
 var main = function(functionName, environment, zipOnly) {
@@ -232,7 +237,7 @@ var main = function(functionName, environment, zipOnly) {
   
   gutil.log('data', data);
   
-  var functionsToRun = [clean, npm, makeDist, gulpZipFiles];
+  var functionsToRun = [clean, npm, makeDist, zipFiles];
   if (!zipOnly) functionsToRun.push(upload);
   
   //let the water fall baby
