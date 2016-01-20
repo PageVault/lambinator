@@ -6,6 +6,7 @@ var AWS           = require('aws-sdk')
     , ncp         = require('ncp')
     , gulp        = require('gulp')
     , zip         = require('gulp-zip')
+    , gutil       = require('gulp-util')
     , pkg         = require(process.cwd() + '/package.json')
     ;
 
@@ -17,7 +18,7 @@ var data = {
 
   
 var clean = function(callback) {
-  console.log('cleanup prep...');
+  gutil.log('cleanup prep...');
 
   fs.remove(path.join(process.cwd(), 'dist'), function(err) {
     if (err) return callback(err);
@@ -26,7 +27,7 @@ var clean = function(callback) {
 };
 
 var npm = function(callback) {
-  console.log('copying NPM modules for deployment...');
+  gutil.log('copying NPM modules for deployment...');
   ncp(
     path.join(process.cwd(), 'node_modules'),
     path.join(data.distPath, 'node_modules'),
@@ -35,29 +36,29 @@ var npm = function(callback) {
 
 };
 
-var envFile = function(callback) {
-  console.log('copying .env file...');
-  //use environment specific .env file if there is one
-  fs.exists(path.join(data.folderPath, '.env.' + data.environment), function(exists) {
-    var filename = "";
+// var envFile = function(callback) {
+//   console.log('copying .env file...');
+//   //use environment specific .env file if there is one
+//   fs.exists(path.join(data.folderPath, '.env.' + data.environment), function(exists) {
+//     var filename = "";
     
-    if (exists) {
-      filename = path.join(data.folderPath, '.env.' + data.environment);
-      console.log(chalk.yellow('using .env.' + data.environment + '...'), filename);
-      fs.createReadStream(filename).pipe(fs.createWriteStream(path.join(data.distPath, '.env.' + data.environment)));
-    }
-    else {
-      filename = path.join(data.folderPath, '.env');
-      console.log('copying file:', filename);
-      fs.createReadStream(filename).pipe(fs.createWriteStream(path.join(data.distPath, '.env')));
-    }
+//     if (exists) {
+//       filename = path.join(data.folderPath, '.env.' + data.environment);
+//       console.log(chalk.yellow('using .env.' + data.environment + '...'), filename);
+//       fs.createReadStream(filename).pipe(fs.createWriteStream(path.join(data.distPath, '.env.' + data.environment)));
+//     }
+//     else {
+//       filename = path.join(data.folderPath, '.env');
+//       console.log('copying file:', filename);
+//       fs.createReadStream(filename).pipe(fs.createWriteStream(path.join(data.distPath, '.env')));
+//     }
     
-    callback(null);
-  });
-};
+//     callback(null);
+//   });
+// };
 
 var makeDist = function(callback) {
-  console.log('creating dist folder...');
+  gutil.log('creating dist folder...');
 
   //copy any file dependencies
   var devRoot = path.join(process.cwd(), 'dependencies');
@@ -66,12 +67,12 @@ var makeDist = function(callback) {
 
   if (data.dependencies) {
     data.dependencies.forEach(function(file) {
-      console.log('adding dependency:', file);
+      gutil.log('adding dependency:', file);
       var functionDependency = path.join(data.folderPath, file);
       var globalDependency = path.join(lambRoot, file);
       
-      console.log('functionDependency', functionDependency);
-      console.log('globalDependency', globalDependency);
+      // console.log('functionDependency', functionDependency);
+      // console.log('globalDependency', globalDependency);
       
       //look in function directory for file
       if (fs.existsSync(functionDependency)) {
@@ -86,25 +87,26 @@ var makeDist = function(callback) {
   
   //copy function itself
   var functionFile = path.join(data.folderPath, data.functionName + '.js');
-  console.log('copying function:', functionFile);
+  gutil.log('copying function:', functionFile);
   fs.createReadStream(functionFile).pipe(fs.createWriteStream(path.join(data.distPath, data.functionName + '.js')));
   callback(null);
 };
 
-var zipFiles = function(callback) {
-  var input = data.distPath;
-  var output = path.join(process.cwd(), 'dist', data.functionName + '.zip');
-  var zip = new Zip();
+// var zipFiles = function(callback) {
+//   var input = data.distPath;
+//   var output = path.join(process.cwd(), 'dist', data.functionName + '.zip');
+//   var zip = new Zip();
 
-  console.log('zipping contents in ' + input + '...');
-  console.log('zipping to ' + output + '...');
+//   console.log('zipping contents in ' + input + '...');
+//   console.log('zipping to ' + output + '...');
 
-  zip.add(output, input)
-    .then(callback)
-    .catch(callback);
-};
+//   zip.add(output, input)
+//     .then(callback)
+//     .catch(callback);
+// };
 
 var gulpZipFiles = function(callback) {
+  gutil.log('zipping files...');
   try {
     gulp.src(data.distPath + '/**/*')
       .pipe(zip(data.functionName + '.zip'))
@@ -117,13 +119,36 @@ var gulpZipFiles = function(callback) {
 };
 
 var upload = function(callback) {
-  // AWS.config.region = process.env.AWS_REGION ;
-  var lambda = new AWS.Lambda();
+  var lambda;
+
+  //use .env file to load permissions to use for Lambda execution, if a .env exists
+  if (fs.existsSync(path.join(process.cwd(), '.env'))) {
+    gutil.log('.env file exists, checking for AWS permission keys...');
+    require('dotenv').load();
+    if (process.env.accessKeyId && process.env.secretAccessKey && process.env.region) {
+      gutil.log('using .env for Lambda permissions...');
+      lambda = new AWS.Lambda({
+        accessKeyId: process.env.accessKeyId,
+        secretAccessKey: process.env.secretAccessKey,
+        region: process.env.region
+      });
+    }
+    else {
+      gutil.log('AWS permission keys not found - using default...');
+      lambda = new AWS.Lambda();
+    }
+  }
+  else {
+      gutil.log('No .env file found - using default...');
+      lambda = new AWS.Lambda();
+  }
+
+
   var functionName = data.environment + '-' + data.functionName;
   var zipFile = './dist/' + data.functionName + '.zip';
 
   var createLambda = function() {
-    console.log('Updating function ' + functionName);
+    gutil.log('Updating function ' + functionName);
 
     var params = {
       Code: {
@@ -138,9 +163,9 @@ var upload = function(callback) {
       Timeout: data.timeout
     };
 
-    lambda.createFunction(params, function(err, data) {
+    lambda.createFunction(params, function(err, result) {
       if (err) {
-        console.log(chalk.red('Error uploading ' + data.functionName), err);
+        gutil.log(chalk.red('Error uploading ' + data.functionName), err);
         callback(err);
       }
       else  {
@@ -155,11 +180,11 @@ var upload = function(callback) {
       ZipFile: fs.readFileSync(zipFile)
     };
 
-    console.log('Updating function ' + functionName + ' from ' + zipFile);
+    gutil.log('Updating function ' + functionName + ' from ' + zipFile);
 
-    lambda.updateFunctionCode(params, function(err, data) {
+    lambda.updateFunctionCode(params, function(err, result) {
       if (err) {
-        console.log(chalk.red('Error uploading ' + functionName), err);
+        gutil.log(chalk.red('Error uploading ' + functionName), err);
         callback(err);
       }
       else {
@@ -169,7 +194,7 @@ var upload = function(callback) {
   }
 
   var startUpload = function() {
-    lambda.getFunction({FunctionName: functionName}, function(err, data) {
+    lambda.getFunction({FunctionName: functionName}, function(err, result) {
       if (err) {
         if (err.statusCode === 404) {
           //function doesn't exist yet -- call lambda.createFunction to create it
@@ -178,7 +203,7 @@ var upload = function(callback) {
         else {
           var warning = 'AWS API request failed. '
           warning += 'Check your AWS credentials and permissions.'
-          console.log(chalk.yellow(warning));
+          gutil.log(chalk.yellow(warning));
           callback(new Error(warning));
         }
       }
@@ -195,7 +220,7 @@ var upload = function(callback) {
 
 var main = function(functionName, environment, zipOnly) {
   var folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
-  console.log('deploying function', folderPath);
+  gutil.log('deploying function', folderPath);
   
   //set up global data
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
@@ -203,16 +228,18 @@ var main = function(functionName, environment, zipOnly) {
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = environment;
   
-  var functionsToRun = [clean, npm, envFile, makeDist, gulpZipFiles];
+  gutil.log('data', data);
+  
+  var functionsToRun = [clean, npm, makeDist, gulpZipFiles];
   if (!zipOnly) functionsToRun.push(upload);
   
   //let the water fall baby
   async.waterfall(functionsToRun, function(err, results) {
     if (err) {
-      console.log('ERROR', err);
+      gutil.log('ERROR', err);
     }
     else {
-      console.log('results', results);
+      gutil.log('Done!');
     }
   });
 };
