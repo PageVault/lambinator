@@ -14,15 +14,9 @@ var main = function(func) {
   var devRoot = path.join(process.cwd(), 'lamb/files');
   var runRoot = path.join(process.cwd(), 'node_modules/lambinator/lamb/files');
   var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot; 
-  gulp.src([lambRoot + '/**', '!' + lambRoot + '/.env.sample', '!' + lambRoot + '/function-name.js'])
+  gulp.src([lambRoot + '/**', '!' + lambRoot + '/function-name.js'])
     .pipe(replace('{{function-name}}', func))
     .pipe(gulp.dest('./functions/' + func));
-
-  //copy env file and rename
-  gulp.src([lambRoot + '/.env.sample'])
-    .pipe(rename('.env'))
-    .pipe(gulp.dest('./functions/' + func));
-
 
   //copy main function file and rename
   gulp.src([lambRoot + '/function-name.js'])
