@@ -72,16 +72,16 @@ var makeDist = function(callback) {
       var functionDependency = path.join(data.folderPath, file);
       var globalDependency = path.join(lambRoot, file);
       
-      // console.log('functionDependency', functionDependency);
-      // console.log('globalDependency', globalDependency);
       
       //look in function directory for file
       if (fs.existsSync(functionDependency)) {
+        gutil.log('functionDependency', functionDependency);
         fs.copySync(functionDependency, path.join(data.distPath, file));
         // fs.createReadStream(functionDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
       }
       //look in global dependencies folder
       else if (fs.existsSync(globalDependency)) {
+        gutil.log('globalDependency', globalDependency);
         fs.copySync(globalDependency, path.join(data.distPath, file));
         // fs.createReadStream(globalDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
       }
