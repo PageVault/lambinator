@@ -17,7 +17,7 @@ var data = {
   environment: null   //e.g. staging
 };
 
-  
+
 var clean = function(callback) {
   gutil.log('cleanup prep...');
 
@@ -42,7 +42,7 @@ var npm = function(callback) {
 //   //use environment specific .env file if there is one
 //   fs.exists(path.join(data.folderPath, '.env.' + data.environment), function(exists) {
 //     var filename = "";
-    
+
 //     if (exists) {
 //       filename = path.join(data.folderPath, '.env.' + data.environment);
 //       console.log(chalk.yellow('using .env.' + data.environment + '...'), filename);
@@ -53,7 +53,7 @@ var npm = function(callback) {
 //       console.log('copying file:', filename);
 //       fs.createReadStream(filename).pipe(fs.createWriteStream(path.join(data.distPath, '.env')));
 //     }
-    
+
 //     callback(null);
 //   });
 // };
@@ -64,15 +64,15 @@ var makeDist = function(callback) {
   //copy any file dependencies
   var devRoot = path.join(process.cwd(), 'dependencies');
   var runRoot = path.join(process.cwd(), 'node_modules/lambinator/dependencies');
-  var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot; 
+  var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot;
 
   if (data.dependencies) {
     data.dependencies.forEach(function(file) {
       gutil.log('adding dependency:', file);
       var functionDependency = path.join(data.folderPath, file);
       var globalDependency = path.join(lambRoot, file);
-      
-      
+
+
       //look in function directory for file
       if (fs.existsSync(functionDependency)) {
         gutil.log('functionDependency', functionDependency);
@@ -87,7 +87,7 @@ var makeDist = function(callback) {
       }
     });
   }
-  
+
   //copy function itself
   var functionFile = path.join(data.folderPath, data.functionName + '.js');
   gutil.log('copying function:', functionFile);
@@ -122,16 +122,17 @@ var zipFiles = function(callback) {
   }
   catch(err) {
     callback(err);
-  }    
+  }
 };
 
 var upload = function(callback) {
   var lambda;
 
-  //use .env file to load permissions to use for Lambda execution, if a .env exists
-  if (fs.existsSync(path.join(process.cwd(), '.env'))) {
+  //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
+  var envPath = path.join(data.folderPath, '.env');
+  if (fs.existsSync(envPath)) {
     gutil.log('.env file exists, checking for AWS permission keys...');
-    require('dotenv').load();
+    require('dotenv').load({path: envPath});
     if (process.env.accessKeyId && process.env.secretAccessKey && process.env.region) {
       gutil.log('using .env for Lambda permissions...');
       lambda = new AWS.Lambda({
@@ -210,7 +211,7 @@ var upload = function(callback) {
         else {
           var warning = 'AWS API request failed. '
           warning += 'Check your AWS credentials and permissions.'
-          gutil.log(chalk.yellow(warning));
+          gutil.log(chalk.yellow(warning), JSON.stringify(lambda, null, 2));
           callback(new Error(warning));
         }
       }
@@ -222,24 +223,24 @@ var upload = function(callback) {
   };
 
   //having async issues with zip task completing -- wait a second before starting upload
-  setTimeout(startUpload, 7000);  
+  setTimeout(startUpload, 7000);
 };
 
 var main = function(functionName, environment, zipOnly) {
   var folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
   gutil.log('deploying function', folderPath);
-  
+
   //set up global data
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
   data.folderPath = folderPath;
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = environment;
-  
+
   gutil.log('data', data);
-  
+
   var functionsToRun = [clean, npm, makeDist, zipFiles];
   if (!zipOnly) functionsToRun.push(upload);
-  
+
   //let the water fall baby
   async.waterfall(functionsToRun, function(err, results) {
     if (err) {
