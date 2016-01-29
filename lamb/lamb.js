@@ -5,7 +5,7 @@ var packageJson = require(process.cwd() + '/package.json')
   , chalk       = require('chalk')
   , tasks       = require('require-dir')('./tasks')
   , pkg         = require(process.cwd() + '/package.json')
-  ; 
+  ;
 
 
 var logHeader = function(command) {
@@ -14,9 +14,11 @@ var logHeader = function(command) {
 
 
 commander
-  .version(packageJson.version)
+  .version(packageJson.version);
+
+commander
   .command('new <function-name>')
-  .description('Initialize needed assets for describing lambda functions')
+  .description('Creates a new Lambda function in /functions, including a function stub, lambinator.json file, and .env.sample file')
   .action(function (func) {
     logHeader();
     console.log(chalk.white.bold('creating new function: '), func);
@@ -24,17 +26,15 @@ commander
   });
 
 commander
-  .version(packageJson.version)
-  .command('run <function-name>')
+  .command('run <function-name> [test-event]')
   .description('Run a function locally during development for testing, using a mock event described in lambinator.json')
-  .action(function (func) {
+  .action(function (func, testEvent) {
     logHeader();
     console.log(chalk.white.bold('running function: '), func);
-    tasks.run(func);
+    tasks.run(func, testEvent);
   });
 
 commander
-  .version(packageJson.version)
   .command('deploy <function-name> <environment>')
   .description('Deploy a function to AWS Lambda, specifying an environment/version prefix')
   .action(function (func, env) {
@@ -44,7 +44,6 @@ commander
   });
 
 commander
-  .version(packageJson.version)
   .command('zip <function-name>')
   .description('Zip a function for deployment to AWS Lambda manually')
   .action(function (func, env) {
@@ -55,7 +54,6 @@ commander
 
 
 commander
-  .version(packageJson.version)
   .command('list')
   .description('Lists functions registered in the Lambinator Function Registry')
   .action(function () {
@@ -65,7 +63,6 @@ commander
   });
 
 commander
-  .version(packageJson.version)
   .command('install <function-name>')
   .description('Installs a function by name from the registry for local editing and eventual deployment')
   .action(function (func) {

@@ -1,8 +1,8 @@
 var chalk = require('chalk');
 
-var run = function(func, eventName) {
+var run = function(func, testEvent) {
   console.log('lambinator is running function:', func);
-  
+
   //get function config
   var funcToRun = require(process.cwd() + '/functions/' + func + '/' + func);
   var funcData =  require(process.cwd() + '/functions/' + func + '/lambinator.json');
@@ -27,10 +27,10 @@ var run = function(func, eventName) {
     }
   };
 
-  
-  var evt = funcData.testEvents[eventName || funcData.defaultEvent];
+
+  var evt = funcData.testEvents[testEvent || funcData.defaultEvent];
 
   funcToRun.handler(evt, context);
 };
 
-module.exports = run; 
+module.exports = run;

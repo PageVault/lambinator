@@ -13,8 +13,8 @@ var main = function(func) {
   //copy files and replace template text
   var devRoot = path.join(process.cwd(), 'lamb/files');
   var runRoot = path.join(process.cwd(), 'node_modules/lambinator/lamb/files');
-  var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot; 
-  gulp.src([lambRoot + '/**', '!' + lambRoot + '/function-name.js'])
+  var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot;
+  gulp.src([lambRoot + '/*.json', lambRoot + '/.env.sample', '!' + lambRoot + '/function-name.js'])
     .pipe(replace('{{function-name}}', func))
     .pipe(gulp.dest('./functions/' + func));
 
