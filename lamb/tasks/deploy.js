@@ -37,53 +37,56 @@ var npm = function(callback) {
 
 };
 
-// var envFile = function(callback) {
-//   console.log('copying .env file...');
-//   //use environment specific .env file if there is one
-//   fs.exists(path.join(data.folderPath, '.env.' + data.environment), function(exists) {
-//     var filename = "";
+var envFile = function (callback) {
+  gutil.log('managing .env file:', data.environment);
+  //concat environment specific .env file if there is one
+  var targetedEnv = path.join(data.folderPath, '.env.' + data.environment);
+  var finalEnv = path.join(data.distPath, '.env');
+  var hasTargetedEnv = fs.existsSync(targetedEnv);
 
-//     if (exists) {
-//       filename = path.join(data.folderPath, '.env.' + data.environment);
-//       console.log(chalk.yellow('using .env.' + data.environment + '...'), filename);
-//       fs.createReadStream(filename).pipe(fs.createWriteStream(path.join(data.distPath, '.env.' + data.environment)));
-//     }
-//     else {
-//       filename = path.join(data.folderPath, '.env');
-//       console.log('copying file:', filename);
-//       fs.createReadStream(filename).pipe(fs.createWriteStream(path.join(data.distPath, '.env')));
-//     }
-
-//     callback(null);
-//   });
-// };
+  if (!hasTargetedEnv) {
+    gutil.log('no .env found for ' + data.environment);
+    return callback(null);
+  }
+  else {
+    gutil.log('found .env.' + data.environment);
+    fs.copy(targetedEnv, finalEnv, callback);
+    // fs.createReadStream(targetedEnv).pipe(fs.createWriteStream(finalEnv));
+    // callback(null);
+  }
+};
 
 var makeDist = function(callback) {
   gutil.log('creating dist folder...');
 
   //copy any file dependencies
-  var devRoot = path.join(process.cwd(), 'dependencies');
-  var runRoot = path.join(process.cwd(), 'node_modules/lambinator/dependencies');
+  var devRoot = path.join(process.cwd(), 'dependencies'); //we're in dev mode
+  var runRoot = path.join(process.cwd(), 'node_modules/lambinator/dependencies'); //we're in runtime mode
   var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot;
 
   if (data.dependencies) {
-    data.dependencies.forEach(function(file) {
-      gutil.log('adding dependency:', file);
-      var functionDependency = path.join(data.folderPath, file);
-      var globalDependency = path.join(lambRoot, file);
-
-
-      //look in function directory for file
-      if (fs.existsSync(functionDependency)) {
-        gutil.log('functionDependency', functionDependency);
-        fs.copySync(functionDependency, path.join(data.distPath, file));
-        // fs.createReadStream(functionDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
+    data.dependencies.forEach(function (file) {
+      if (file == '.env') {
+        gutil.log('skipping .env : handled separately', file);
       }
-      //look in global dependencies folder
-      else if (fs.existsSync(globalDependency)) {
-        gutil.log('globalDependency', globalDependency);
-        fs.copySync(globalDependency, path.join(data.distPath, file));
-        // fs.createReadStream(globalDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
+      else {
+        gutil.log('adding dependency:', file);
+        var functionDependency = path.join(data.folderPath, file);
+        var globalDependency = path.join(lambRoot, file);
+
+
+        //look in function directory for file
+        if (fs.existsSync(functionDependency)) {
+          gutil.log('functionDependency', functionDependency);
+          fs.copySync(functionDependency, path.join(data.distPath, file));
+          // fs.createReadStream(functionDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
+        }
+        //look in global dependencies folder
+        else if (fs.existsSync(globalDependency)) {
+          gutil.log('globalDependency', globalDependency);
+          fs.copySync(globalDependency, path.join(data.distPath, file));
+          // fs.createReadStream(globalDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
+        }
       }
     });
   }
@@ -93,6 +96,7 @@ var makeDist = function(callback) {
   gutil.log('copying function:', functionFile);
   fs.createReadStream(functionFile).pipe(fs.createWriteStream(path.join(data.distPath, data.functionName + '.js')));
   callback(null);
+
 };
 
 // var zipFiles = function(callback) {
@@ -110,26 +114,29 @@ var makeDist = function(callback) {
 
 var zipFiles = function(callback) {
   gutil.log('zipping files...');
-  try {
-    task.run(function() {
-      gulp.src(data.distPath + '/**/*')
-        .pipe(zip(data.functionName + '.zip'))
-        .pipe(gulp.dest('./dist'));
-    })
-      .then(function() {
-        callback(null);
-      });
-  }
-  catch(err) {
-    callback(err);
-  }
+  setTimeout(function () {
+    try {
+      task.run(function() {
+        gulp.src(data.distPath + '/**/*')
+          .pipe(zip(data.functionName + '.zip'))
+          .pipe(gulp.dest('./dist'));
+      })
+        .then(function() {
+          callback(null);
+        });
+    }
+    catch(err) {
+      callback(err);
+    }
+
+  }, 3000);
 };
 
 var upload = function(callback) {
   var lambda;
 
   //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
-  var envPath = path.join(data.folderPath, '.env');
+  var envPath = path.join(data.distPath, '.env');
   if (fs.existsSync(envPath)) {
     gutil.log('.env file exists, checking for AWS permission keys...');
     require('dotenv').load({path: envPath});
@@ -238,7 +245,7 @@ var main = function(functionName, environment, zipOnly) {
 
   gutil.log('data', data);
 
-  var functionsToRun = [clean, npm, makeDist, zipFiles];
+  var functionsToRun = [clean, npm, envFile, makeDist, zipFiles];
   if (!zipOnly) functionsToRun.push(upload);
 
   //let the water fall baby

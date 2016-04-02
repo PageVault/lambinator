@@ -39,17 +39,19 @@ commander
   .description('Deploy a function to AWS Lambda, specifying an environment/version prefix')
   .action(function (func, env) {
     logHeader();
+    if (!env) env = 'staging';
     console.log(chalk.white.bold('deploying function: '), func, chalk.white.bold('to environment:'), env);
     tasks.deploy(func, env);
   });
 
 commander
-  .command('zip <function-name>')
+  .command('zip <function-name> <environment>')
   .description('Zip a function for deployment to AWS Lambda manually')
   .action(function (func, env) {
     logHeader();
+    console.log(chalk.yellow('env: ' + env));
     console.log(chalk.white.bold('deploying function: '), func, chalk.white.bold('to environment:'), env);
-    tasks.zip(func, 'zip');
+    tasks.zip(func, env);
   });
 
 
