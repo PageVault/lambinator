@@ -4,10 +4,9 @@ var AWS           = require('aws-sdk')
     , async       = require('async')
     , chalk       = require('chalk')
     , ncp         = require('ncp')
-    , gulp        = require('gulp')
-    , zip         = require('gulp-zip')
+    , JSZip       = require('jszip')
+    , recursive   = require('recursive-readdir')
     , gutil       = require('gulp-util')
-    , task        = require('gulp-task')
     , pkg         = require(process.cwd() + '/package.json')
     ;
 
@@ -114,22 +113,25 @@ var makeDist = function(callback) {
 
 var zipFiles = function(callback) {
   gutil.log('zipping files...');
-  setTimeout(function () {
-    try {
-      task.run(function() {
-        gulp.src(data.distPath + '/**/*')
-          .pipe(zip(data.functionName + '.zip'))
-          .pipe(gulp.dest('./dist'));
-      })
-        .then(function() {
-          callback(null);
-        });
-    }
-    catch(err) {
-      callback(err);
-    }
 
-  }, 3000);
+  var zip = new JSZip();
+  var search = data.distPath;
+
+  recursive(search, function(err, files) {
+    // var file = files[0];
+    files.forEach(function(file) {
+      var path = file.substring(file.indexOf(search) + search.length + 1);
+      zip.file(path, fs.readFileSync(file));
+    });
+
+    var buffer = zip.generate({type:"nodebuffer"});
+
+    fs.writeFile(data.distPath + '.zip', buffer, function(err) {
+      if (err) callback(err)
+      else callback(null);
+    });
+
+  });
 };
 
 var upload = function(callback) {
@@ -153,6 +155,9 @@ var upload = function(callback) {
       lambda = new AWS.Lambda();
     }
   }
+  else if (fs.existsSync(envPath)) {
+
+  }
   else {
       gutil.log('No .env file found - using default...');
       lambda = new AWS.Lambda();
@@ -160,7 +165,7 @@ var upload = function(callback) {
 
 
   var functionName = data.environment + '-' + data.functionName;
-  var zipFile = './dist/' + data.functionName + '.zip';
+  var zipFile = data.distPath + '.zip';
 
   var createLambda = function() {
     gutil.log('Updating function ' + functionName);
@@ -209,6 +214,7 @@ var upload = function(callback) {
   }
 
   var startUpload = function() {
+    gutil.log('Getting current lambda function info (if any)...');
     lambda.getFunction({FunctionName: functionName}, function(err, result) {
       if (err) {
         if (err.statusCode === 404) {
@@ -229,8 +235,7 @@ var upload = function(callback) {
     });
   };
 
-  //having async issues with zip task completing -- wait a second before starting upload
-  setTimeout(startUpload, 7000);
+  startUpload();
 };
 
 var main = function(functionName, environment, zipOnly) {
