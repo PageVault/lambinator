@@ -135,7 +135,8 @@ var zipFiles = function(callback) {
 };
 
 var upload = function(callback) {
-  var lambda;
+  //set region from lambinator.config:region
+  AWS.config.update({region:data.region});
 
   //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
   var envPath = path.join(data.distPath, '.env');
@@ -154,9 +155,6 @@ var upload = function(callback) {
       gutil.log('AWS permission keys not found - using default...');
       lambda = new AWS.Lambda();
     }
-  }
-  else if (fs.existsSync(envPath)) {
-
   }
   else {
       gutil.log('No .env file found - using default...');
