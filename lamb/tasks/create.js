@@ -11,17 +11,17 @@ var main = function(func) {
   //create directory
   fs.ensureDirSync('./functions/' + func);
 
+  //get files dir
+  var filesDir = path.resolve(path.dirname(fs.realpathSync(__filename)), '../files');
+  // console.log('filesDir', filesDir);
+
   //copy files and replace template text
-  var lambRoot = path.join(process.cwd(), 'lamb/files');
-  // var devRoot = path.join(process.cwd(), 'lamb/files');
-  // var runRoot = path.join(process.cwd(), 'node_modules/lambinator/lamb/files');
-  // var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot;
-  gulp.src([lambRoot + '/*.json', lambRoot + '/.env.sample', '!' + lambRoot + '/function-name.js'])
+  gulp.src([filesDir + '/*.json', filesDir + '/.env.sample', '!' + filesDir + '/function-name.js'])
     .pipe(replace('{{function-name}}', func))
     .pipe(gulp.dest('./functions/' + func));
 
   //copy main function file and rename
-  gulp.src([lambRoot + '/function-name.js'])
+  gulp.src([filesDir + '/function-name.js'])
     .pipe(rename(func + '.js'))
     .pipe(gulp.dest('./functions/' + func));
 
