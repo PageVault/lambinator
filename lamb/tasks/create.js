@@ -4,6 +4,7 @@ var gulp          = require('gulp')
     , fs          = require('fs-extra')
     , chalk       = require('chalk')
     , path        = require('path')
+    , gutil       = require('gulp-util')
     ;
 
 var main = function(func) {
@@ -11,9 +12,10 @@ var main = function(func) {
   fs.ensureDirSync('./functions/' + func);
 
   //copy files and replace template text
-  var devRoot = path.join(process.cwd(), 'lamb/files');
-  var runRoot = path.join(process.cwd(), 'node_modules/lambinator/lamb/files');
-  var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot;
+  var lambRoot = path.join(process.cwd(), 'lamb/files');
+  // var devRoot = path.join(process.cwd(), 'lamb/files');
+  // var runRoot = path.join(process.cwd(), 'node_modules/lambinator/lamb/files');
+  // var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot;
   gulp.src([lambRoot + '/*.json', lambRoot + '/.env.sample', '!' + lambRoot + '/function-name.js'])
     .pipe(replace('{{function-name}}', func))
     .pipe(gulp.dest('./functions/' + func));
@@ -23,6 +25,8 @@ var main = function(func) {
     .pipe(rename(func + '.js'))
     .pipe(gulp.dest('./functions/' + func));
 
+
+  gutil.log(func + ' created at ' + path.resolve('./functions/' + func));
 };
 
 module.exports = main;

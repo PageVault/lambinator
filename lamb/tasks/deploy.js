@@ -93,23 +93,17 @@ var makeDist = function(callback) {
   //copy function itself
   var functionFile = path.join(data.folderPath, data.functionName + '.js');
   gutil.log('copying function:', functionFile);
-  fs.createReadStream(functionFile).pipe(fs.createWriteStream(path.join(data.distPath, data.functionName + '.js')));
+  fs.copySync(functionFile, path.join(data.distPath, data.functionName + '.js'));
+
+  //copy settings file for environment to settings.json
+  var settingsFile =  process.cwd() + '/functions/' + data.functionName + '/settings-' + data.environment + '.json';
+  if (fs.existsSync(settingsFile)) {
+    gutil.log('copying settings-' + data.environment + '.json to settings.json');
+    fs.copySync(settingsFile, path.join(data.distPath, 'settings.json'));
+  }
+
   callback(null);
-
 };
-
-// var zipFiles = function(callback) {
-//   var input = data.distPath;
-//   var output = path.join(process.cwd(), 'dist', data.functionName + '.zip');
-//   var zip = new Zip();
-
-//   console.log('zipping contents in ' + input + '...');
-//   console.log('zipping to ' + output + '...');
-
-//   zip.add(output, input)
-//     .then(callback)
-//     .catch(callback);
-// };
 
 var zipFiles = function(callback) {
   gutil.log('zipping files...');
@@ -238,7 +232,8 @@ var upload = function(callback) {
 
 var main = function(functionName, environment, zipOnly) {
   var folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
-  gutil.log('deploying function', folderPath);
+  var action = zipOnly ? 'zipping' : 'deploying';
+  gutil.log(action + ' function', folderPath);
 
   //set up global data
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));

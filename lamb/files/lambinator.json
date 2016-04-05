@@ -37,5 +37,6 @@
       "key3": "value 3"
     }
   },
-  "defaultEvent": "s3"
+  "defaultEvent": "s3",
+  "defaultEnv": "staging"
 }

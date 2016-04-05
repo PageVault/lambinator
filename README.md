@@ -1,7 +1,7 @@
-#Who
+# Who
 ![alt text](https://s3.amazonaws.com/resources.page-vault.com/lambinator.png "Lambinator Logo")
 
-#What
+# What
 
 lamb·i·nat·or
 
@@ -10,7 +10,7 @@ _n._
 1. A set of command line tools for managing AWS Lambda functions
 2. _future_ registry of pre-built functions for deploying to AWS Lambda
 
-#Why
+# Why
 
 There are several projects emerging in this space, but none quite met our needs:
 
@@ -20,18 +20,19 @@ There are several projects emerging in this space, but none quite met our needs:
 
 Lambinator currently handles the first two scenarios, and will eventually handle all 3.
 
-#How
+# How
 
-##Installation
+## Installation
 
-`npm install lambinator`
+`npm install lambinator --save-dev` #NOTE: don't install globally!
 
-##Basic Usage
+## Basic Usage
 * `lamb new my-function-name` -- create a new function directory with lambinator assets (.env, lambinator.json, my-function-name.js)
-* `lamb run my-function-name` -- run a function locally 
+* `lamb run my-function-name` -- run a function locally
 * `lamb deploy my-function-name --env development` -- deploy a function to AWS Lambda
 * _future_ `lamb list` -- list functions in lambinator registry
 * _future_ `lamb install registered-function-name` -- download a function from the lambinator registry for editing
 
-##Detailed Usage
-Details to come!
+## Detailed Usage
+### AWS Credentials
+In order to deploy Lambda functions you will need IAM credentials with adequate privileges. Lambinator uses the AWS SDK for Javascript, whose [permission model is described here](http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/node-configuring.html). Our recommended approach is to _not_ specify credentials in any .env files

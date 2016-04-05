@@ -1,7 +1,9 @@
-var chalk = require('chalk');
+var chalk = require('chalk')
+  , fs    = require('fs-extra')
+  , path  = require('path')
+  ;
 
-var run = function(func, testEvent) {
-  console.log('lambinator is running function:', func);
+var run = function(func, testEvent, testEnv) {
 
   //get function config
   var funcToRun = require(process.cwd() + '/functions/' + func + '/' + func);
@@ -27,9 +29,21 @@ var run = function(func, testEvent) {
     }
   };
 
-
+  //get mock event
   var evt = funcData.testEvents[testEvent || funcData.defaultEvent];
 
+  //copy settings file to settings.json
+  var env = testEnv || funcData.defaultEnv;
+  if (env) {
+    var settingsFile =  process.cwd() + '/functions/' + func + '/settings-' + env + '.json';
+    // console.log('env', env);
+    // console.log('settingsFile', settingsFile);
+    if (fs.existsSync(settingsFile)) {
+      fs.copySync(settingsFile, path.join(process.cwd(), 'settings.json'), { clobber: true });
+    }
+  }
+
+  //spin it up!
   funcToRun.handler(evt, context);
 };
 
