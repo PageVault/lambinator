@@ -135,10 +135,10 @@ var upload = function(callback) {
   //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
   var envPath = path.join(data.distPath, '.env');
   if (fs.existsSync(envPath)) {
-    gutil.log('.env file exists, checking for AWS permission keys...');
+    gutil.log('.env file exists, checking for AWS credentials...');
     require('dotenv').load({path: envPath});
     if (process.env.accessKeyId && process.env.secretAccessKey && process.env.region) {
-      gutil.log('using .env for Lambda permissions...');
+      gutil.log('using .env for deployment credentials...');
       lambda = new AWS.Lambda({
         accessKeyId: process.env.accessKeyId,
         secretAccessKey: process.env.secretAccessKey,
@@ -146,12 +146,12 @@ var upload = function(callback) {
       });
     }
     else {
-      gutil.log('AWS permission keys not found - using default...');
+      gutil.log('.env has no AWS credentials - using shared credentials file (j.mp/awscredentials)...');
       lambda = new AWS.Lambda();
     }
   }
   else {
-      gutil.log('No .env file found - using default...');
+      gutil.log('No .env file - using shared credentials file (j.mp/awscredentials)...');
       lambda = new AWS.Lambda();
   }
 
