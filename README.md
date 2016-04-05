@@ -24,7 +24,7 @@ Lambinator currently handles the first two scenarios, and will eventually handle
 
 ## Installation
 
-`npm install lambinator --save-dev` #NOTE: don't install globally!
+`npm install lambinator -g`
 
 ## Basic Usage
 * `lamb new my-function-name` -- create a new function directory with lambinator assets (.env, lambinator.json, my-function-name.js)

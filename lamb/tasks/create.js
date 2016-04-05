@@ -16,7 +16,7 @@ var main = function(func) {
   // console.log('filesDir', filesDir);
 
   //copy files and replace template text
-  gulp.src([filesDir + '/*.json', filesDir + '/.env.sample', '!' + filesDir + '/function-name.js'])
+  gulp.src([filesDir + '/*.json', filesDir + '/.env.sample', filesDir + '/readme.md', '!' + filesDir + '/function-name.js'])
     .pipe(replace('{{function-name}}', func))
     .pipe(gulp.dest('./functions/' + func));
 
