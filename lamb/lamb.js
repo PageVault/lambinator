@@ -22,6 +22,7 @@ program
 
 program
   .command('create <function-name>')
+  .alias('new')
   .description('Creates a new Lambda function in /functions, including a function stub, lambinator.json file, and .env.sample file')
   .action(function (func) {
     logHeader(func, null, 'creating new function');
@@ -30,6 +31,7 @@ program
 
 program
   .command('run <function-name>')
+  .alias('exec')
   .description('Run a function locally during development for testing, using a mock event described in lambinator.json')
   .option("-m, --mock [mockEvent]", "Which mock event to use")
   .option("-e, --env [settingsEnvironment]", "Which settings.json to use")
@@ -52,6 +54,7 @@ program
 
 program
   .command('zip <function-name>')
+  .alias('bundle')
   .description('Zip a function for deployment to AWS Lambda manually')
   .option("-e, --env [environment]", "Which environment to deploy to")
   .action(function (func, options) {
@@ -60,6 +63,11 @@ program
     tasks.zip(func, env);
   });
 
+program
+  .command('*')
+  .action(function(env){
+    program.outputHelp();
+  });
 /*
 program
   .command('list')

@@ -4,6 +4,10 @@
   "handler":        "{{function-name}}.handler",
   "description":    "",
   "roleArn": "arn:aws:iam::ACCOUNT_ID:role/LAMBDA_EXEC_ROLE_NAME",
+  "VpcConfig": {
+    "SecurityGroupIds": [],
+    "SubnetIds": []
+  },
   "memorySize":     128,
   "timeout":        10,
   "dependencies":   [],

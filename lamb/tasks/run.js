@@ -1,14 +1,15 @@
 var chalk = require('chalk')
   , fs    = require('fs-extra')
   , path  = require('path')
+  , gutil = require('gulp-util')
   ;
 
 var run = function(func, testEvent, testEnv) {
 
   //get function config
-  var funcToRun = require(process.cwd() + '/functions/' + func + '/' + func);
   var funcData =  require(process.cwd() + '/functions/' + func + '/lambinator.json');
 
+  //mock context
   var context = {
     done: function(error, data) {
       if (error) {
@@ -31,19 +32,22 @@ var run = function(func, testEvent, testEnv) {
 
   //get mock event
   var evt = funcData.testEvents[testEvent || funcData.defaultEvent];
+  gutil.log('evt', evt);
+
 
   //copy settings file to settings.json
-  var env = testEnv || funcData.defaultEnv;
-  if (env) {
-    var settingsFile =  process.cwd() + '/functions/' + func + '/settings-' + env + '.json';
-    // console.log('env', env);
-    // console.log('settingsFile', settingsFile);
-    if (fs.existsSync(settingsFile)) {
-      fs.copySync(settingsFile, path.join(process.cwd(), 'settings.json'), { clobber: true });
-    }
+  var env = testEnv || funcData.defaultEnv || "staging";
+  var settingsFile =  process.cwd() + '/functions/' + func + '/settings-' + env + '.json';
+  // console.log('env', env);
+  gutil.log('settingsFile', settingsFile);
+  if (fs.existsSync(settingsFile)) {
+    var runtimeSettingsFile = path.join(process.cwd() + '/functions/' + func + '/', 'settings.json');
+    gutil.log('Copying settings file:', settingsFile, runtimeSettingsFile);
+    fs.copySync(settingsFile, runtimeSettingsFile, { clobber: true });
   }
 
   //spin it up!
+  var funcToRun = require(process.cwd() + '/functions/' + func + '/' + func);
   funcToRun.handler(evt, context);
 };
 

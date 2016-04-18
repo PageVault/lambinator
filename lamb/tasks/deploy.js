@@ -1,13 +1,17 @@
-var AWS           = require('aws-sdk')
-    , fs          = require('fs-extra')
-    , path        = require('path')
-    , async       = require('async')
-    , chalk       = require('chalk')
-    , ncp         = require('ncp')
-    , JSZip       = require('jszip')
-    , recursive   = require('recursive-readdir')
-    , gutil       = require('gulp-util')
-    , pkg         = require(process.cwd() + '/package.json')
+var AWS            = require('aws-sdk')
+    , fs           = require('fs-extra')
+    , path         = require('path')
+    , async        = require('async')
+    , chalk        = require('chalk')
+    , ncp          = require('ncp')
+    , JSZip        = require('jszip')
+    , recursive    = require('recursive-readdir')
+    , gulp         = require('gulp')
+    , install      = require('gulp-install')
+    , gutil        = require('gulp-util')
+    , next         = require('gulp-next')
+    , pkg          = require(process.cwd() + '/package.json')
+    , Zip          = require('node-7z')
     ;
 
 var data = {
@@ -27,13 +31,35 @@ var clean = function(callback) {
 };
 
 var npm = function(callback) {
-  gutil.log('copying NPM modules for deployment...');
-  ncp(
-    path.join(process.cwd(), 'node_modules'),
-    path.join(data.distPath, 'node_modules'),
-    function(err) { callback(err); }
-  );
-
+  // gutil.log('copying NPM modules for deployment...');
+  // ncp(
+  //   path.join(process.cwd(), 'node_modules'),
+  //   path.join(data.distPath, 'node_modules'),
+  //   function(err) { callback(err); }
+  // );
+  gutil.log('creating package.json for installing package dependencies...');
+  if (data.packages) {
+    var packagePath = path.join(data.distPath, 'package.json');
+    var packages = {
+      dependencies: data.packages
+    };
+    fs.writeFileSync(packagePath, JSON.stringify(packages, null, 2));
+    gutil.log('installing function packages from NPM...');
+    return gulp.src(packagePath)
+      .pipe(install({ production: true }))
+      .pipe(next(function() {
+        callback(null);
+      }));
+  }
+  else {
+    gutil.log('installing all project packages from NPM...');
+    return gulp.src('./package.json')
+      .pipe(gulp.dest(data.distPath))
+      .pipe(install({ production: true }))
+      .pipe(next(function() {
+        callback(null);
+      }));
+  }
 };
 
 var envFile = function (callback) {
@@ -59,11 +85,10 @@ var makeDist = function(callback) {
   gutil.log('creating dist folder...');
 
   //copy any file dependencies
-  var devRoot = path.join(process.cwd(), 'dependencies'); //we're in dev mode
-  var runRoot = path.join(process.cwd(), 'node_modules/lambinator/dependencies'); //we're in runtime mode
-  var lambRoot = fs.existsSync(runRoot) ? runRoot : devRoot;
+  var globalDependenciesDir = path.resolve(path.dirname(fs.realpathSync(__filename)), '../dependencies');
 
   if (data.dependencies) {
+    gutil.log("adding dependencies:", data.dependencies);
     data.dependencies.forEach(function (file) {
       if (file == '.env') {
         gutil.log('skipping .env : handled separately', file);
@@ -71,20 +96,17 @@ var makeDist = function(callback) {
       else {
         gutil.log('adding dependency:', file);
         var functionDependency = path.join(data.folderPath, file);
-        var globalDependency = path.join(lambRoot, file);
-
+        var globalDependency = path.join(globalDependenciesDir, file);
 
         //look in function directory for file
         if (fs.existsSync(functionDependency)) {
-          gutil.log('functionDependency', functionDependency);
+          gutil.log('Using locally provided dependency:', functionDependency);
           fs.copySync(functionDependency, path.join(data.distPath, file));
-          // fs.createReadStream(functionDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
         }
         //look in global dependencies folder
         else if (fs.existsSync(globalDependency)) {
-          gutil.log('globalDependency', globalDependency);
+          gutil.log('Using global dependency:', globalDependency);
           fs.copySync(globalDependency, path.join(data.distPath, file));
-          // fs.createReadStream(globalDependency).pipe(fs.createWriteStream(path.join(data.distPath, file)));
         }
       }
     });
@@ -108,24 +130,33 @@ var makeDist = function(callback) {
 var zipFiles = function(callback) {
   gutil.log('zipping files...');
 
-  var zip = new JSZip();
-  var search = data.distPath;
+  var zip = new Zip();
+  var input = data.distPath;
+  var output = data.distPath + '.zip';
 
-  recursive(search, function(err, files) {
-    // var file = files[0];
-    files.forEach(function(file) {
-      var path = file.substring(file.indexOf(search) + search.length + 1);
-      zip.file(path, fs.readFileSync(file));
-    });
+  zip.add(output, input)
+    .then(function() { callback(null); })
+    .catch(function(err) { callback(err); });
 
-    var buffer = zip.generate({type:"nodebuffer"});
+  // var zip = new JSZip();
+  // var search = data.distPath;
+  // recursive(search, function(err, files) {
 
-    fs.writeFile(data.distPath + '.zip', buffer, function(err) {
-      if (err) callback(err)
-      else callback(null);
-    });
+  //   files.forEach(function(file) {
+  //     var path = file.substring(file.indexOf(search) + search.length + 1);
+  //     if (fs.lstatSync(file).isFile()) {
+  //       zip.file(path, fs.readFileSync(file));
+  //     }
+  //   });
 
-  });
+  //   var buffer = zip.generate({type:"nodebuffer"});
+
+  //   fs.writeFile(data.distPath + '.zip', buffer, function(err) {
+  //     if (err) callback(err)
+  //     else callback(null);
+  //   });
+
+  // });
 };
 
 var upload = function(callback) {
@@ -175,6 +206,8 @@ var upload = function(callback) {
       Timeout: data.timeout
     };
 
+    if (data.VpcConfig) params.VpcConfig = data.VpcConfig;
+
     lambda.createFunction(params, function(err, result) {
       if (err) {
         gutil.log(chalk.red('Error uploading ' + data.functionName), err);
@@ -200,7 +233,25 @@ var upload = function(callback) {
         callback(err);
       }
       else {
-        callback();
+
+        var configParams = {
+          FunctionName: functionName,
+          Handler: data.handler,
+          Role: data.roleArn,
+          Description: data.description,
+          MemorySize: data.memorySize,
+          Timeout: data.timeout
+        };
+
+        if (data.VpcConfig) configParams.VpcConfig = data.VpcConfig;
+
+        lambda.updateFunctionConfiguration(configParams, function(err, data) {
+          if (err) {
+            gutil.log(chalk.red('Error updating function config for ' + functionName), err);
+            callback(err);
+          }
+          else callback(null);
+        });
       }
     });
   }
@@ -233,13 +284,16 @@ var upload = function(callback) {
 var main = function(functionName, environment, zipOnly) {
   var folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
   var action = zipOnly ? 'zipping' : 'deploying';
-  gutil.log(action + ' function', folderPath);
 
   //set up global data
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
   data.folderPath = folderPath;
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = environment;
+
+  if (data.testEvents) delete data.testEvents;
+  if (data.defaultEvent) delete data.defaultEvent;
+  if (data.defaultEnv) delete data.defaultEnv;
 
   gutil.log('data', data);
 
