@@ -39,11 +39,10 @@
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.5.4",
     "gulp-util": "^3.0.7",
-    "jszip": "^2.6.0",
     "ncp": "^2.0.0",
-    "node-7z": "^0.4.0",
     "recursive-readdir": "^2.0.0",
-    "require-dir": "^0.3.0"
+    "require-dir": "^0.3.0",
+    "yazl": "^2.3.0"
   },
   "devDependencies": {}
 }

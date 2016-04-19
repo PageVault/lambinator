@@ -11,6 +11,8 @@
   },
   "memorySize":     128,
   "timeout":        10,
+  "packages": {
+  },
   "dependencies":   [],
   "testEvents": {
     "sns": {
