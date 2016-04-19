@@ -4,7 +4,9 @@ var packageJson = require(process.cwd() + '/package.json')
   , program     = require('commander')
   , chalk       = require('chalk')
   , tasks       = require('require-dir')('./tasks')
-  , pkg         = require(process.cwd() + '/package.json')
+  , fs          = require('fs')
+  , path        = require('path')
+  , pkg         = require(path.resolve(path.dirname(fs.realpathSync(__filename)), '../package.json'))
   ;
 
 
@@ -46,10 +48,12 @@ program
   .command('deploy <function-name>')
   .description('Deploy a function to AWS Lambda, specifying an environment/version prefix')
   .option("-e, --env [environment]", "Which environment to deploy to")
+  .option('-u, --upload-only', 'upload only')
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, env, 'deploying function');
-    tasks.deploy(func, env);
+    var uploadOnly = options.uploadOnly;
+    logHeader(func, env, uploadOnly ? 'uploading function' : 'deploying function');
+    tasks.deploy(func, env, { uploadOnly: uploadOnly });
   });
 
 program

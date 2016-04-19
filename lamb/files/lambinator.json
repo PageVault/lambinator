@@ -4,6 +4,7 @@
   "handler":        "{{function-name}}.handler",
   "description":    "",
   "roleArn": "arn:aws:iam::ACCOUNT_ID:role/LAMBDA_EXEC_ROLE_NAME",
+  "runtime": "nodejs4.3",
   "VpcConfig": {
     "SecurityGroupIds": [],
     "SubnetIds": []

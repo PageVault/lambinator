@@ -4,7 +4,6 @@ var AWS            = require('aws-sdk')
     , async        = require('async')
     , chalk        = require('chalk')
     , ncp          = require('ncp')
-    , JSZip        = require('jszip')
     , recursive    = require('recursive-readdir')
     , gulp         = require('gulp')
     , install      = require('gulp-install')
@@ -162,6 +161,7 @@ var zipFiles = function(callback) {
 var upload = function(callback) {
   //set region from lambinator.config:region
   AWS.config.update({region:data.region});
+  AWS.config.apiVersions = {lambda: '2015-03-31'};
 
   //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
   var envPath = path.join(data.distPath, '.env');
@@ -200,7 +200,7 @@ var upload = function(callback) {
       FunctionName: functionName,
       Handler: data.handler,
       Role: data.roleArn,
-      Runtime: 'nodejs',  /* duh */
+      Runtime: data.runtime || 'nodejs4.3',
       Description: data.description,
       MemorySize: data.memorySize,
       Timeout: data.timeout
@@ -241,9 +241,12 @@ var upload = function(callback) {
           Description: data.description,
           MemorySize: data.memorySize,
           Timeout: data.timeout
+          // Runtime: data.runtime || 'nodejs4.3'
         };
 
         if (data.VpcConfig) configParams.VpcConfig = data.VpcConfig;
+
+        // console.log('configParams', configParams);
 
         lambda.updateFunctionConfiguration(configParams, function(err, data) {
           if (err) {
@@ -281,15 +284,16 @@ var upload = function(callback) {
   startUpload();
 };
 
-var main = function(functionName, environment, zipOnly) {
+var main = function (functionName, environment, options) {
   var folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
-  var action = zipOnly ? 'zipping' : 'deploying';
+  var action = options && options.zipOnly ? 'zipping' : 'deploying';
 
   //set up global data
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
   data.folderPath = folderPath;
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = environment;
+  data.uploadOnly = options && options.uploadOnly;
 
   if (data.testEvents) delete data.testEvents;
   if (data.defaultEvent) delete data.defaultEvent;
@@ -298,7 +302,8 @@ var main = function(functionName, environment, zipOnly) {
   gutil.log('data', data);
 
   var functionsToRun = [clean, npm, envFile, makeDist, zipFiles];
-  if (!zipOnly) functionsToRun.push(upload);
+  if (data.uploadOnly) functionsToRun = [upload];
+  else if (action != 'zipping') functionsToRun.push(upload);
 
   //let the water fall baby
   async.waterfall(functionsToRun, function(err, results) {
