@@ -4,10 +4,20 @@ var chalk = require('chalk')
   , gutil = require('gulp-util')
   ;
 
-var run = function(func, testEvent, testEnv) {
+var run = function (func, testEvent, testEnv) {
+  //change working directory
+  var funcDir = process.cwd() + '/functions/' + func;
+  if (!fs.existsSync(funcDir)) {
+    console.log('Could not find a function to run at:', funcDir);
+    console.log('Make sure you are using `lamb run` from your project root directory.');
+    process.exit();
+  }
+
+  console.log('Changing working directory to:', funcDir);
+  process.chdir(funcDir);
 
   //get function config
-  var funcData =  require(process.cwd() + '/functions/' + func + '/lambinator.json');
+  var funcData =  require(process.cwd() + '/lambinator.json');
 
   //mock context
   var context = {
@@ -37,17 +47,17 @@ var run = function(func, testEvent, testEnv) {
 
   //copy settings file to settings.json
   var env = testEnv || funcData.defaultEnv || "staging";
-  var settingsFile =  process.cwd() + '/functions/' + func + '/settings-' + env + '.json';
+  var settingsFile =  process.cwd() + '/settings-' + env + '.json';
   // console.log('env', env);
   gutil.log('settingsFile', settingsFile);
   if (fs.existsSync(settingsFile)) {
-    var runtimeSettingsFile = path.join(process.cwd() + '/functions/' + func + '/', 'settings.json');
+    var runtimeSettingsFile = path.join(process.cwd(), 'settings.json');
     gutil.log('Copying settings file:', settingsFile, runtimeSettingsFile);
     fs.copySync(settingsFile, runtimeSettingsFile, { clobber: true });
   }
 
   //spin it up!
-  var funcToRun = require(process.cwd() + '/functions/' + func + '/' + func);
+  var funcToRun = require(process.cwd() + '/' + func);
   funcToRun.handler(evt, context);
 };
 

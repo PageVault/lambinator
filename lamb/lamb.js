@@ -1,21 +1,27 @@
 #!/usr/bin/env node
 
-var packageJson = require(process.cwd() + '/package.json')
-  , program     = require('commander')
-  , chalk       = require('chalk')
-  , tasks       = require('require-dir')('./tasks')
-  , fs          = require('fs')
-  , path        = require('path')
-  , pkg         = require(path.resolve(path.dirname(fs.realpathSync(__filename)), '../package.json'))
-  ;
+var packageJson = require(process.cwd() + '/package.json');
+var program = require('commander');
+var chalk = require('chalk');
+var tasks = require('require-dir')('./tasks');
+var fs = require('fs');
+var path = require('path');
+var version = require('./version');
 
 
 var logHeader = function(func, env, details) {
-  console.log(chalk.yellow.bold('<- λ -> '));
-  console.log(chalk.yellow.bold('lambinator v' + pkg.version)
-    + ((env) ? '   ' + chalk.blue.bold('env:', env) : '')
-    + '   ' + chalk.red.bold(details + ' "' + func + '"'));
-  console.log(chalk.yellow.bold('<- λ -> '));
+  // console.log('module.parent.filename', module.filename);
+  version().then(function (v) {
+    console.log(v);
+    // if (!config.required) {
+    //   process.exit(0);
+    // }
+    console.log(chalk.yellow.bold('<- λ -> '));
+    console.log(chalk.yellow.bold('lambinator v' + v)
+      + ((env) ? '   ' + chalk.blue.bold('env:', env) : '')
+      + '   ' + chalk.red.bold(details + ' "' + func + '"'));
+    console.log(chalk.yellow.bold('<- λ -> '));
+  });
 };
 
 
@@ -61,10 +67,11 @@ program
   .alias('bundle')
   .description('Zip a function for deployment to AWS Lambda manually')
   .option("-e, --env [environment]", "Which environment to deploy to")
+  .option("-l, --local-node-modules", "Uses cached node_modules instead of `npm install`")
   .action(function (func, options) {
     var env = options.env || 'staging';
     logHeader(func, env, 'zipping function');
-    tasks.zip(func, env);
+    tasks.deploy(func, env, { zipOnly: true, localNodeModules: options.localNodeModules });
   });
 
 program
@@ -72,6 +79,7 @@ program
   .action(function(env){
     program.outputHelp();
   });
+
 /*
 program
   .command('list')

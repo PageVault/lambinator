@@ -10,7 +10,8 @@ var AWS            = require('aws-sdk')
     , gutil        = require('gulp-util')
     , next         = require('gulp-next')
     , pkg          = require(process.cwd() + '/package.json')
-    , yazl         = require('yazl')
+    // , yazl = require('yazl')
+    // , Zip = require('node-7z')
     ;
 
 var data = {
@@ -29,35 +30,39 @@ var clean = function(callback) {
   });
 };
 
-var npm = function(callback) {
-  // gutil.log('copying NPM modules for deployment...');
-  // ncp(
-  //   path.join(process.cwd(), 'node_modules'),
-  //   path.join(data.distPath, 'node_modules'),
-  //   function(err) { callback(err); }
-  // );
-  gutil.log('creating package.json for installing package dependencies...');
-  if (data.packages) {
-    var packagePath = path.join(data.distPath, 'package.json');
-    var packages = {
-      dependencies: data.packages
-    };
-    fs.writeFileSync(packagePath, JSON.stringify(packages, null, 2));
-    gutil.log('installing function packages from NPM...');
-    return gulp.src(packagePath)
-      .pipe(install({ production: true }))
-      .pipe(next(function() {
-        callback(null);
-      }));
+var npm = function (callback) {
+  if (data.localNodeModules) {
+    gutil.log('copying NPM modules for deployment...');
+    fs.copySync(
+      path.join(process.cwd(), 'node_modules'),
+      path.join(data.distPath, 'node_modules')
+    );
+    callback(null);
   }
   else {
-    gutil.log('installing all project packages from NPM...');
-    return gulp.src('./package.json')
-      .pipe(gulp.dest(data.distPath))
-      .pipe(install({ production: true }))
-      .pipe(next(function() {
-        callback(null);
-      }));
+    gutil.log('creating package.json for installing package dependencies...');
+    if (data.packages) {
+      var packagePath = path.join(data.distPath, 'package.json');
+      var packages = {
+        dependencies: data.packages
+      };
+      fs.writeFileSync(packagePath, JSON.stringify(packages, null, 2));
+      gutil.log('installing function packages from NPM...');
+      return gulp.src(packagePath)
+        .pipe(install({ production: true }))
+        .pipe(next(function() {
+          callback(null);
+        }));
+    }
+    else {
+      gutil.log('installing all project packages from NPM...');
+      return gulp.src('./package.json')
+        .pipe(gulp.dest(data.distPath))
+        .pipe(install({ production: true }))
+        .pipe(next(function() {
+          callback(null);
+        }));
+    }
   }
 };
 
@@ -129,7 +134,47 @@ var makeDist = function(callback) {
 var zipFiles = function(callback) {
   gutil.log('zipping files...');
 
-  // using 7-zip via node-7z
+
+  if (process.platform !== 'win32') {
+    //use native zip
+    var cmd = 'zip -r ' + data.distPath + '.zip' + ' .';
+    var exec = require('child_process').exec;
+
+    exec(cmd, {
+      cwd: data.distPath,
+      maxBuffer: 50 * 1024 * 1024
+    }, function (err) {
+      if (err) return callback(err);
+      else return callback(null);
+    });
+  }
+  else {
+    //use npm lib for zipping
+    // NODE-ZIP
+    var zip = new require('node-zip')();
+    var search = data.distPath;
+    recursive(search, function(err, files) {
+
+      files.forEach(function(file) {
+        var path = file.substring(file.indexOf(search) + search.length + 1);
+        if (fs.lstatSync(file).isFile()) {
+          zip.file(path, fs.readFileSync(file));
+        }
+      });
+
+      var buffer = zip.generate({type: 'nodebuffer', compression: 'DEFLATE'});
+
+      fs.writeFile(data.distPath + '.zip', buffer, function(err) {
+        if (err) callback(err)
+        else callback(null);
+      });
+
+    });
+
+  }
+
+
+  // // using 7-zip via node-7z
   // var zip = new Zip();
   // var input = data.distPath;
   // var output = data.distPath + '.zip';
@@ -159,36 +204,36 @@ var zipFiles = function(callback) {
 
   // });
 
+  // YAZL
+  // var zipfile = new yazl.ZipFile();
+  // var search = data.distPath;
 
-  var zipfile = new yazl.ZipFile();
-  var search = data.distPath;
+  // // pipe() can be called any time after the constructor
+  // zipfile.outputStream.pipe(fs.createWriteStream(data.distPath + '.zip')).on("close", function() {
+  //   console.log("done zipping files");
+  //   callback(null);
+  // });
 
-  // pipe() can be called any time after the constructor
-  zipfile.outputStream.pipe(fs.createWriteStream(data.distPath + '.zip')).on("close", function() {
-    console.log("done zipping files");
-    callback(null);
-  });
+  // recursive(search, function (err, files) {
+  //   if (err) return callback(err);
+  //   else {
+  //     files.forEach(function(file) {
+  //       var path = file.substring(file.indexOf(search) + search.length + 1);
+  //       // if (fs.lstatSync(file).isFile()) {
+  //         var virtualFile = file.substring(data.distPath.length + 1);
+  //         // console.log('file', file);
+  //         console.log('zipping file:', virtualFile);
+  //         zipfile.addBuffer(fs.readFileSync(file), virtualFile, {
+  //           mtime: new Date(),
+  //           mode: 0100664, // -rw-rw-r--
+  //         });
+  //       // }
+  //     });
 
-  recursive(search, function (err, files) {
-    if (err) return callback(err);
-    else {
-      files.forEach(function(file) {
-        var path = file.substring(file.indexOf(search) + search.length + 1);
-        if (fs.lstatSync(file).isFile()) {
-          var virtualFile = file.substring(data.distPath.length + 1);
-          // console.log('file', file);
-          // console.log('virtualFile', virtualFile);
-          zipfile.addBuffer(fs.readFileSync(file), virtualFile, {
-            mtime: new Date(),
-            mode: 0100664, // -rw-rw-r--
-          });
-        }
-      });
-
-      // call end() after all the files have been added
-      zipfile.end();
-    }
-  });
+  //     // call end() after all the files have been added
+  //     zipfile.end();
+  //   }
+  // });
 };
 
 var upload = function(callback) {
@@ -327,6 +372,7 @@ var main = function (functionName, environment, options) {
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = environment;
   data.uploadOnly = options && options.uploadOnly;
+  data.localNodeModules = options && options.localNodeModules;
 
   if (data.testEvents) delete data.testEvents;
   if (data.defaultEvent) delete data.defaultEvent;
