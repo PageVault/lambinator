@@ -264,8 +264,10 @@ var upload = function(callback) {
       lambda = new AWS.Lambda();
   }
 
-
   var functionName = data.environment + '-' + data.functionName;
+  if (!data.envPrefixes) {
+    functionName = data.functionName;
+  }
   var zipFile = data.distPath + '.zip';
 
   var createLambda = function() {
