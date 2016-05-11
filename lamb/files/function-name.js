@@ -1,7 +1,5 @@
-var fs    = require('fs')
-  , path  = require('path')
-  ;
-
+var fs = require('fs');
+var path = require('path');
 var settings = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'settings.json')));
 
 var main = function(event, context) {

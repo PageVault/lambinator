@@ -10,8 +10,6 @@ var AWS            = require('aws-sdk')
     , gutil        = require('gulp-util')
     , next         = require('gulp-next')
     , pkg          = require(process.cwd() + '/package.json')
-    // , yazl = require('yazl')
-    // , Zip = require('node-7z')
     ;
 
 var data = {
@@ -172,68 +170,6 @@ var zipFiles = function(callback) {
     });
 
   }
-
-
-  // // using 7-zip via node-7z
-  // var zip = new Zip();
-  // var input = data.distPath;
-  // var output = data.distPath + '.zip';
-
-  // zip.add(output, input)
-  //   .then(function() { callback(null); })
-  //   .catch(function(err) { callback(err); });
-
-  // using JSZip
-  // var zip = new JSZip();
-  // var search = data.distPath;
-  // recursive(search, function(err, files) {
-
-  //   files.forEach(function(file) {
-  //     var path = file.substring(file.indexOf(search) + search.length + 1);
-  //     if (fs.lstatSync(file).isFile()) {
-  //       zip.file(path, fs.readFileSync(file));
-  //     }
-  //   });
-
-  //   var buffer = zip.generate({type:"nodebuffer"});
-
-  //   fs.writeFile(data.distPath + '.zip', buffer, function(err) {
-  //     if (err) callback(err)
-  //     else callback(null);
-  //   });
-
-  // });
-
-  // YAZL
-  // var zipfile = new yazl.ZipFile();
-  // var search = data.distPath;
-
-  // // pipe() can be called any time after the constructor
-  // zipfile.outputStream.pipe(fs.createWriteStream(data.distPath + '.zip')).on("close", function() {
-  //   console.log("done zipping files");
-  //   callback(null);
-  // });
-
-  // recursive(search, function (err, files) {
-  //   if (err) return callback(err);
-  //   else {
-  //     files.forEach(function(file) {
-  //       var path = file.substring(file.indexOf(search) + search.length + 1);
-  //       // if (fs.lstatSync(file).isFile()) {
-  //         var virtualFile = file.substring(data.distPath.length + 1);
-  //         // console.log('file', file);
-  //         console.log('zipping file:', virtualFile);
-  //         zipfile.addBuffer(fs.readFileSync(file), virtualFile, {
-  //           mtime: new Date(),
-  //           mode: 0100664, // -rw-rw-r--
-  //         });
-  //       // }
-  //     });
-
-  //     // call end() after all the files have been added
-  //     zipfile.end();
-  //   }
-  // });
 };
 
 var upload = function(callback) {
