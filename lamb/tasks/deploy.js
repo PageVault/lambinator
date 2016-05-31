@@ -39,28 +39,29 @@ var npm = function (callback) {
   }
   else {
     gutil.log('creating package.json for installing package dependencies...');
-    if (data.packages) {
-      var packagePath = path.join(data.distPath, 'package.json');
-      var packages = {
-        dependencies: data.packages
-      };
-      fs.writeFileSync(packagePath, JSON.stringify(packages, null, 2));
-      gutil.log('installing function packages from NPM...');
-      return gulp.src(packagePath)
-        .pipe(install({ production: true }))
-        .pipe(next(function() {
-          callback(null);
-        }));
-    }
-    else {
-      gutil.log('installing all project packages from NPM...');
-      return gulp.src('./package.json')
-        .pipe(gulp.dest(data.distPath))
-        .pipe(install({ production: true }))
-        .pipe(next(function() {
-          callback(null);
-        }));
-    }
+    var pkg = require(path.join(process.cwd(), 'package.json'));
+    var re = /require\(["'].*["']\)/g;
+    var functionFile = path.join(data.folderPath, data.functionName + '.js');
+    var text = fs.readFileSync(functionFile, {encoding:'utf-8'});
+    var reqs = text.match(re);
+    var dependencies = {};
+
+    reqs.forEach(function (r) {
+      var m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
+      if (pkg.dependencies[m]) {
+        dependencies[m] = pkg.dependencies[m];
+      }
+    });
+
+    var packagePath = path.join(data.distPath, 'package.json');
+    var packages = {dependencies: dependencies};
+    fs.writeFileSync(packagePath, JSON.stringify(packages, null, 2));
+    gutil.log('installing function packages from NPM...');
+    return gulp.src(packagePath)
+      .pipe(install({ production: true }))
+      .pipe(next(function() {
+        callback(null);
+      }));
   }
 };
 
@@ -133,20 +134,20 @@ var zipFiles = function(callback) {
   gutil.log('zipping files...');
 
 
-  if (process.platform !== 'win32') {
-    //use native zip
-    var cmd = 'zip -r ' + data.distPath + '.zip' + ' .';
-    var exec = require('child_process').exec;
+  // if (process.platform !== 'win32') {
+  //   //use native zip
+  //   var cmd = 'zip -r ' + data.distPath + '.zip' + ' .';
+  //   var exec = require('child_process').exec;
 
-    exec(cmd, {
-      cwd: data.distPath,
-      maxBuffer: 50 * 1024 * 1024
-    }, function (err) {
-      if (err) return callback(err);
-      else return callback(null);
-    });
-  }
-  else {
+  //   exec(cmd, {
+  //     cwd: data.distPath,
+  //     maxBuffer: 50 * 1024 * 1024
+  //   }, function (err) {
+  //     if (err) return callback(err);
+  //     else return callback(null);
+  //   });
+  // }
+  // else {
     //use npm lib for zipping
     // NODE-ZIP
     var zip = new require('node-zip')();
@@ -169,7 +170,7 @@ var zipFiles = function(callback) {
 
     });
 
-  }
+  // }
 };
 
 var upload = function(callback) {
