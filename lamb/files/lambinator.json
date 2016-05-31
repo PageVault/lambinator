@@ -12,18 +12,16 @@
   },
   "memorySize":     128,
   "timeout":        10,
-  "packages": {
-  },
   "dependencies":   [],
   "testEvents": {
     "sns": {
-        "Records": [
-            {
-                "Sns": {
-                    "Message": "My test event"
-                }
-            }
-        ]
+      "Records": [
+        {
+          "Sns": {
+            "Message": "YOUR DATA HERE"
+          }
+        }
+      ]
     },
     "s3": {
         "Records": [
