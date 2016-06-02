@@ -134,20 +134,20 @@ var zipFiles = function(callback) {
   gutil.log('zipping files...');
 
 
-  // if (process.platform !== 'win32') {
-  //   //use native zip
-  //   var cmd = 'zip -r ' + data.distPath + '.zip' + ' .';
-  //   var exec = require('child_process').exec;
+  if (process.platform !== 'win32') {
+    //use native zip
+    var cmd = 'zip -r ' + data.distPath + '.zip' + ' .';
+    var exec = require('child_process').exec;
 
-  //   exec(cmd, {
-  //     cwd: data.distPath,
-  //     maxBuffer: 50 * 1024 * 1024
-  //   }, function (err) {
-  //     if (err) return callback(err);
-  //     else return callback(null);
-  //   });
-  // }
-  // else {
+    exec(cmd, {
+      cwd: data.distPath,
+      maxBuffer: 50 * 1024 * 1024
+    }, function (err) {
+      if (err) return callback(err);
+      else return callback(null);
+    });
+  }
+  else {
     //use npm lib for zipping
     // NODE-ZIP
     var zip = new require('node-zip')();
@@ -170,7 +170,7 @@ var zipFiles = function(callback) {
 
     });
 
-  // }
+  }
 };
 
 var upload = function(callback) {
