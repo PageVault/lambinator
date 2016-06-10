@@ -56,6 +56,15 @@ var run = function (func, testEvent, testEnv) {
     fs.copySync(settingsFile, runtimeSettingsFile, { clobber: true });
   }
 
+  //copy env file to .env
+  var envFile = process.cwd() + '/.env.' + env;
+  gutil.log('envFile', envFile);
+  if (fs.existsSync(envFile)) {
+    var runtimeEnvFile = path.join(process.cwd(), '.env');
+    gutil.log('Copying env file:', envFile, runtimeEnvFile);
+    fs.copySync(envFile, runtimeEnvFile, { clobber: true });
+  }
+
   //spin it up!
   var funcToRun = require(process.cwd() + '/' + func);
   funcToRun.handler(evt, context);
