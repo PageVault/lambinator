@@ -9,7 +9,7 @@ var path = require('path');
 var version = require('./version');
 
 
-var logHeader = function(func, env, details) {
+var logHeader = function(func, env, details, next) {
   // console.log('module.parent.filename', module.filename);
   version().then(function (v) {
     console.log(v);
@@ -21,6 +21,7 @@ var logHeader = function(func, env, details) {
       + ((env) ? '   ' + chalk.blue.bold('env:', env) : '')
       + '   ' + chalk.red.bold(details + ' "' + func + '"'));
     console.log(chalk.yellow.bold('<- λ -> '));
+    next();
   });
 };
 
@@ -33,8 +34,7 @@ program
   .alias('new')
   .description('Creates a new Lambda function in /functions, including a function stub, lambinator.json file, and .env.sample file')
   .action(function (func) {
-    logHeader(func, null, 'creating new function');
-    tasks.create(func);
+    logHeader(func, null, 'creating new function', function() { tasks.create(func); });
   });
 
 program
@@ -46,8 +46,7 @@ program
   .action(function (func, options) {
     var testEvent = options.mock;
     var env = options.env;
-    logHeader(func, env, 'running function locally');
-    tasks.run(func, testEvent, env);
+    logHeader(func, null, 'running function locally', function() { tasks.run(func, testEvent, env); });
   });
 
 program
@@ -58,8 +57,7 @@ program
   .action(function (func, options) {
     var env = options.env || 'staging';
     var uploadOnly = options.uploadOnly;
-    logHeader(func, env, uploadOnly ? 'uploading function' : 'deploying function');
-    tasks.deploy(func, env, { uploadOnly: uploadOnly });
+    logHeader(func, null, 'deploying function', function() { tasks.deploy(func, env, { uploadOnly: uploadOnly }); });
   });
 
 program
@@ -70,8 +68,7 @@ program
   .option("-l, --local-node-modules", "Uses cached node_modules instead of `npm install`")
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, env, 'zipping function');
-    tasks.deploy(func, env, { zipOnly: true, localNodeModules: options.localNodeModules });
+    logHeader(func, null, 'zipping function', function() { tasks.deploy(func, env, { zipOnly: true, localNodeModules: options.localNodeModules }); });
   });
 
 program
