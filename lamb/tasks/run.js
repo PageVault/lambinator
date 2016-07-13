@@ -42,7 +42,11 @@ var run = function (func, testEvent, testEnv) {
 
   //get mock event
   var evt = funcData.testEvents[testEvent || funcData.defaultEvent];
-  gutil.log('evt', evt);
+  if (!evt) {
+    console.log('Could not find a mock event named "' + (testEvent || funcData.defaultEvent) + '"');
+    process.exit();
+  }
+  gutil.log('mock event:', evt);
 
 
   //copy settings file to settings.json
