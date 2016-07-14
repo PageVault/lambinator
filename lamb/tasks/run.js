@@ -19,6 +19,8 @@ var run = function (func, testEvent, testEnv) {
   //get function config
   var funcData =  require(process.cwd() + '/lambinator.json');
 
+  var startTime = new Date();
+
   //mock context
   var context = {
     done: function(error, data) {
@@ -34,9 +36,14 @@ var run = function (func, testEvent, testEnv) {
     fail: function(error) {
       console.log(chalk.red('error running function'), error);
     },
-    succeed: function(data) {
+
+    succeed: function (data) {
       console.log(chalk.green('function ran and returned:'), data);
       process.exit(1);
+    },
+
+    getRemainingTimeInMillis: function () {
+      return 'x - ' + (new Date() - startTime);
     }
   };
 
@@ -70,8 +77,14 @@ var run = function (func, testEvent, testEnv) {
   }
 
   //spin it up!
-  var funcToRun = require(process.cwd() + '/' + func);
-  funcToRun.handler(evt, context);
+  gutil.log('running function...');
+  try {
+    var funcToRun = require(process.cwd() + '/' + func);
+    funcToRun.handler(evt, context);
+  }
+  catch (err) {
+    gutil.log('error running function', err);
+  }
 };
 
 module.exports = run;
