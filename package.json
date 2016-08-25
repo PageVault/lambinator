@@ -15,7 +15,7 @@
     "node.js"
   ],
   "engines": {
-    "node": "=0.10.36"
+    "node": "=4.3.2"
   },
   "author": "toddwprice",
   "license": "MIT",
