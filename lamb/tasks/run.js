@@ -19,22 +19,25 @@ var run = function (func, testEvent, testEnv) {
   //get function config
   var funcData =  require(process.cwd() + '/lambinator.json');
 
-  var startTime = new Date();
-
   //mock context
   var context = {
+    startTime: new Date(),
+    timeout: 50000, //for test purposes, timeout after 10s
+
     done: function(error, data) {
       if (error) {
         console.log(chalk.red('error running function'), error);
+        process.exit(1);
       }
       else {
         console.log(chalk.green('function ran and returned:'), data);
+        process.exit(0);
       }
-      process.exit(1);
     },
 
     fail: function(error) {
       console.log(chalk.red('error running function'), error);
+      process.exit(1);
     },
 
     succeed: function (data) {
@@ -43,18 +46,9 @@ var run = function (func, testEvent, testEnv) {
     },
 
     getRemainingTimeInMillis: function () {
-      return 'x - ' + (new Date() - startTime);
+      return this.timeout - ((new Date) - this.startTime);
     }
   };
-
-  //get mock event
-  var evt = funcData.testEvents[testEvent || funcData.defaultEvent];
-  if (!evt) {
-    console.log('Could not find a mock event named "' + (testEvent || funcData.defaultEvent) + '"');
-    process.exit();
-  }
-  gutil.log('mock event:', evt);
-
 
   //copy settings file to settings.json
   var env = testEnv || funcData.defaultEnv || "staging";
@@ -76,15 +70,39 @@ var run = function (func, testEvent, testEnv) {
     fs.copySync(envFile, runtimeEnvFile, { clobber: true });
   }
 
-  //spin it up!
-  gutil.log('running function...');
-  try {
-    var funcToRun = require(process.cwd() + '/' + func);
-    funcToRun.handler(evt, context);
+  //custom script?
+  if (funcData.customScript) {
+    try {
+      //call custom script and pass in mock context
+      console.log('working dir:', process.cwd());
+      var reqScript = process.cwd() + '/' + funcData.customScript;
+      console.log('requiring script:', reqScript);
+      require(reqScript)(context);
+    }
+    catch(err) {
+      context.fail(err);
+    }
   }
-  catch (err) {
-    gutil.log('error running function', err);
+  else {
+    //get mock event
+    var evt = funcData.testEvents[testEvent || funcData.defaultEvent];
+    if (!evt) {
+      console.log('Could not find a mock event named "' + (testEvent || funcData.defaultEvent) + '"');
+      process.exit();
+    }
+    gutil.log('mock event:', evt);
+
+    //spin it up using mock event
+    gutil.log('running function...');
+    try {
+      var funcToRun = require(process.cwd() + '/' + func);
+      funcToRun.handler(evt, context);
+    }
+    catch (err) {
+      gutil.log('error running function', err);
+    }
   }
+
 };
 
 module.exports = run;

@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
-var packageJson = require(process.cwd() + '/package.json');
 var program = require('commander');
 var chalk = require('chalk');
 var tasks = require('require-dir')('./tasks');
 var fs = require('fs');
 var path = require('path');
-var version = require('./version');
+var version = require('./tasks/version');
 
 
 var logHeader = function(func, env, details, next) {
@@ -24,10 +23,6 @@ var logHeader = function(func, env, details, next) {
     next();
   });
 };
-
-
-program
-  .version(packageJson.version);
 
 program
   .command('create <function-name>')
