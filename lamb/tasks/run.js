@@ -22,7 +22,7 @@ var run = function (func, testEvent, testEnv) {
   //mock context
   var context = {
     startTime: new Date(),
-    timeout: 50000, //for test purposes, timeout after 10s
+    timeout: 300000, //for test purposes, timeout after 10s
 
     done: function(error, data) {
       if (error) {
