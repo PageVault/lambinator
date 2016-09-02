@@ -38,6 +38,7 @@ program
   .description('Run a function locally during development for testing, using a mock event described in lambinator.json')
   .option("-m, --mock [mockEvent]", "Which mock event to use")
   .option("-e, --env [settingsEnvironment]", "Which settings.json to use")
+  .option("-d, --data [jsonData]", "JSON data to allow function to parse through process.argv")
   .action(function (func, options) {
     var testEvent = options.mock;
     var env = options.env;

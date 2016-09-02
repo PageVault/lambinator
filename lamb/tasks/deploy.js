@@ -255,6 +255,7 @@ var upload = function(callback) {
           FunctionName: functionName,
           Handler: data.handler,
           Role: data.roleArn,
+          Runtime: data.runtime || 'nodejs4.3',
           Description: data.description,
           MemorySize: data.memorySize,
           Timeout: data.timeout

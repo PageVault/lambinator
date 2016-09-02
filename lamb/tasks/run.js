@@ -1,8 +1,8 @@
-var chalk = require('chalk')
-  , fs    = require('fs-extra')
-  , path  = require('path')
-  , gutil = require('gulp-util')
-  ;
+var chalk = require('chalk');
+var fs    = require('fs-extra');
+var path  = require('path');
+var gutil = require('gulp-util');
+var startTime = new Date();
 
 var run = function (func, testEvent, testEnv) {
   //change working directory
@@ -21,7 +21,6 @@ var run = function (func, testEvent, testEnv) {
 
   //mock context
   var context = {
-    startTime: new Date(),
     timeout: 300000, //for test purposes, timeout after 10s
 
     done: function(error, data) {
