@@ -3,8 +3,13 @@ var fs    = require('fs-extra');
 var path  = require('path');
 var gutil = require('gulp-util');
 var startTime = new Date();
+var timeout; 
 
 var run = function (func, testEvent, testEnv) {
+  var folderPath = path.join(process.cwd(), '/functions', '/' + func);
+  var data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
+  timeout = data.timeout ? (data.timeout * 1000) : 300000;
+
   //change working directory
   var funcDir = process.cwd() + '/functions/' + func;
   if (!fs.existsSync(funcDir)) {
@@ -21,7 +26,6 @@ var run = function (func, testEvent, testEnv) {
 
   //mock context
   var context = {
-    timeout: 300000, //for test purposes, timeout after 10s
 
     done: function(error, data) {
       if (error) {
@@ -45,7 +49,7 @@ var run = function (func, testEvent, testEnv) {
     },
 
     getRemainingTimeInMillis: function () {
-      return this.timeout - ((new Date) - this.startTime);
+      return timeout - ((new Date) - startTime);
     }
   };
 
