@@ -99,7 +99,7 @@ var run = function (func, testEvent, testEnv) {
     gutil.log('running function...');
     try {
       var funcToRun = require(process.cwd() + '/' + func);
-      funcToRun.handler(evt, context);
+      funcToRun.handler(evt, context, context.done);
     }
     catch (err) {
       gutil.log('error running function', err);
