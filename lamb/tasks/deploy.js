@@ -120,11 +120,16 @@ var makeDist = function(callback) {
   gutil.log('copying function:', functionFile);
   fs.copySync(functionFile, path.join(data.distPath, data.functionName + '.js'));
 
-  //copy settings file for environment to settings.json
+  //settings
   var settingsFile =  process.cwd() + '/functions/' + data.functionName + '/settings-' + data.environment + '.json';
   if (fs.existsSync(settingsFile)) {
-    gutil.log('copying settings-' + data.environment + '.json to settings.json');
-    fs.copySync(settingsFile, path.join(data.distPath, 'settings.json'));
+    //read settings file for environment
+    var s = JSON.parse(fs.readFileSync(settingsFile, {encoding:'utf8'}));
+    //add "env"
+    s.env = data.environment;
+    //write to settings.json
+    gutil.log('write settings-' + data.environment + '.json to settings.json');
+    fs.writeFileSync(path.join(data.distPath, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
   }
 
   callback(null);
