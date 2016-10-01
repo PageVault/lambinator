@@ -56,12 +56,15 @@ var run = function (func, testEvent, testEnv) {
   //copy settings file to settings.json
   var env = testEnv || funcData.defaultEnv || "staging";
   var settingsFile =  process.cwd() + '/settings-' + env + '.json';
-  // console.log('env', env);
-  gutil.log('settingsFile', settingsFile);
+  //settings
   if (fs.existsSync(settingsFile)) {
-    var runtimeSettingsFile = path.join(process.cwd(), 'settings.json');
-    gutil.log('Copying settings file:', settingsFile, runtimeSettingsFile);
-    fs.copySync(settingsFile, runtimeSettingsFile, { clobber: true });
+    //read settings file for environment
+    var s = JSON.parse(fs.readFileSync(settingsFile, {encoding:'utf8'}));
+    //add "env"
+    s.env = env;
+    //write to settings.json
+    gutil.log('write settings-' + env + '.json to settings.json');
+    fs.writeFileSync(path.join(process.cwd(), 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
   }
 
   //copy env file to .env
