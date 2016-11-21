@@ -1,16 +1,16 @@
-var AWS            = require('aws-sdk')
-    , fs           = require('fs-extra')
-    , path         = require('path')
-    , async        = require('async')
-    , chalk        = require('chalk')
-    , ncp          = require('ncp')
-    , recursive    = require('recursive-readdir')
-    , gulp         = require('gulp')
-    , install      = require('gulp-install')
-    , gutil        = require('gulp-util')
-    , next         = require('gulp-next')
-    , pkg          = require(process.cwd() + '/package.json')
-    ;
+var AWS          = require('aws-sdk');
+var fs           = require('fs-extra');
+var path         = require('path');
+var async        = require('async');
+var chalk        = require('chalk');
+var ncp          = require('ncp');
+var recursive    = require('recursive-readdir');
+var gulp         = require('gulp');
+var install      = require('gulp-install');
+var gutil        = require('gulp-util');
+var next         = require('gulp-next');
+var pkg          = require(process.cwd() + '/package.json');
+var spawn        = require('child_process').spawn;
 
 var data = {
   folderPath: null,   //e.g. ./functions/hello-world
@@ -25,6 +25,47 @@ var clean = function(callback) {
   fs.remove(path.join(process.cwd(), 'dist'), function(err) {
     if (err) return callback(err);
     fs.ensureDir(data.distPath, function(err) { callback(err); });
+  });
+};
+
+var prep = function(callback) {
+  gutil.log('prep...');
+  fs.ensureDir(data.distPath, function(err) { callback(err); });
+  gutil.log('creating package.json for installing package dependencies...');
+  var pkg = require(path.join(process.cwd(), 'package.json'));
+  var re = /require\(["'].*["']\)/g;
+  var functionFile = path.join(data.folderPath, data.functionName + '.js');
+  var text = fs.readFileSync(functionFile, {encoding:'utf-8'});
+  var reqs = text.match(re);
+  var dependencies = {};
+
+  reqs.forEach(function (r) {
+    var m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
+    if (pkg.dependencies[m]) {
+      dependencies[m] = pkg.dependencies[m];
+    }
+  });
+
+  var packagePath = path.join(data.distPath, 'package.json');
+  var packages = {dependencies: dependencies};
+  fs.writeFile(packagePath, JSON.stringify(packages, null, 2), callback);
+};
+
+var yarn = function(callback) {
+  var y = spawn('yarn');
+
+  y.stdout.on('data', (data) => {
+    gutil.log(data.toString());
+  });
+
+  y.stderr.on('err', (err) => {
+    callback(err);
+  });
+
+  y.on('close', (code) => {
+    // var tsHash = tsData.toString();
+    // console.log('tsHash', tsHash);
+    callback(null);
   });
 };
 
@@ -121,7 +162,10 @@ var makeDist = function(callback) {
   fs.copySync(functionFile, path.join(data.distPath, data.functionName + '.js'));
 
   //settings
-  var settingsFile =  process.cwd() + '/functions/' + data.functionName + '/settings-' + data.environment + '.json';
+  var settingsFile =  process.cwd() + '/functions/' + data.functionName + '/settings';
+  if (!data.envPrefixes) settingsFile += '.json';
+  else settingsFile += '-' + data.environment + '.json'; 
+
   if (fs.existsSync(settingsFile)) {
     //read settings file for environment
     var s = JSON.parse(fs.readFileSync(settingsFile, {encoding:'utf8'}));
@@ -315,7 +359,7 @@ var main = function (functionName, environment, options) {
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
   data.folderPath = folderPath;
   data.distPath = path.join(process.cwd(), '/dist', functionName);
-  data.environment = environment;
+  data.environment = !data.envPrefixes ? 'production' : environment;
   data.uploadOnly = options && options.uploadOnly;
   data.localNodeModules = options && options.localNodeModules;
 
@@ -326,6 +370,7 @@ var main = function (functionName, environment, options) {
   gutil.log('data', data);
 
   var functionsToRun = [clean, npm, envFile, makeDist, zipFiles];
+  // var functionsToRun = [prep, yarn, envFile, makeDist, zipFiles];
   if (data.uploadOnly) functionsToRun = [upload];
   else if (action != 'zipping') functionsToRun.push(upload);
 
@@ -339,6 +384,5 @@ var main = function (functionName, environment, options) {
     }
   });
 };
-
 
 module.exports = main;
