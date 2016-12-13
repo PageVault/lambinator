@@ -7,6 +7,12 @@ var timeout;
 
 var run = function (func, testEvent, testEnv) {
   var folderPath = path.join(process.cwd(), '/functions', '/' + func);
+  if (!fs.existsSync(folderPath)) {
+    console.log('Could not find function:', func);
+    console.log('Make sure you are using `lamb run` from your project root directory.');
+    process.exit();
+  }
+
   var data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
   timeout = data.timeout ? (data.timeout * 1000) : 300000;
 
@@ -105,7 +111,10 @@ var run = function (func, testEvent, testEnv) {
       funcToRun.handler(evt, context, context.done);
     }
     catch (err) {
-      gutil.log('error running function', err);
+      gutil.log(gutil.colors.red('error running function'));
+      console.log();
+      console.log((err.stack) ? err.stack : err.toString());
+      console.log();
     }
   }
 
