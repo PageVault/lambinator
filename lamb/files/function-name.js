@@ -1,14 +1,13 @@
-var fs = require('fs');
-var path = require('path');
-var settings = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'settings.json')));
+'use strict';
 
-var main = function(event, context) {
-  var result = JSON.stringify(event, null, 2);
+let fs = require('fs');
+let path = require('path');
+let settings = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'settings.json')));
+
+let main = (event, context, next) => {
+  let result = JSON.stringify(event, null, 2);
   console.log('favorite planet is ' + settings.favoritePlanet);
-  context.done(null, 'received event: ' + result);
+  next(null, 'received event: ' + result);
 };
 
-module.exports = {
-  handler: main
-}
-
+module.exports.handler = main;
