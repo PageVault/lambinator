@@ -27,6 +27,9 @@ var run = function (func, testEvent, testEnv) {
   console.log('Changing working directory to:', funcDir);
   process.chdir(funcDir);
 
+  //set env for lambinator
+  process.env.lambinator = true;
+
   //get function config
   var funcData =  require(process.cwd() + '/lambinator.json');
 
