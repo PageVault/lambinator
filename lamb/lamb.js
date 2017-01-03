@@ -5,24 +5,20 @@ var chalk = require('chalk');
 var tasks = require('require-dir')('./tasks');
 var fs = require('fs');
 var path = require('path');
-var version = require('./tasks/version');
 
+var version = require(path.resolve(__dirname, '../package.json')).version;
 
 var logHeader = function(func, env, details, next) {
-  // console.log('module.parent.filename', module.filename);
-  version().then(function (v) {
-    console.log(v);
-    // if (!config.required) {
-    //   process.exit(0);
-    // }
-    console.log(chalk.yellow.bold('<- λ -> '));
-    console.log(chalk.yellow.bold('lambinator v' + v)
-      + ((env) ? '   ' + chalk.blue.bold('env:', env) : '')
-      + '   ' + chalk.red.bold(details + ' "' + func + '"'));
-    console.log(chalk.yellow.bold('<- λ -> '));
-    next();
-  });
+  console.log(version);
+  console.log(chalk.yellow.bold('<- λ -> '));
+  console.log(chalk.yellow.bold('lambinator v' + version)
+    + ((env) ? '   ' + chalk.blue.bold('env:', env) : '')
+    + '   ' + chalk.red.bold(details + ' "' + func + '"'));
+  console.log(chalk.yellow.bold('<- λ -> '));
+  next();
 };
+
+program.version(version);
 
 program
   .command('create <function-name>')
