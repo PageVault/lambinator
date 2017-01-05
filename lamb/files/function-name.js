@@ -1,5 +1,7 @@
 'use strict';
 
+process.env['PATH'] = process.env['PATH'] + ':' + process.env['LAMBDA_TASK_ROOT'];
+
 let fs = require('fs');
 let path = require('path');
 let settings = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'settings.json')));
