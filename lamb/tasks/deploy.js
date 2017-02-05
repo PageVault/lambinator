@@ -1,58 +1,62 @@
-var AWS          = require('aws-sdk');
-var fs           = require('fs-extra');
-var path         = require('path');
-var async        = require('async');
-var chalk        = require('chalk');
-var ncp          = require('ncp');
-var recursive    = require('recursive-readdir');
-var gulp         = require('gulp');
-var install      = require('gulp-install');
-var gutil        = require('gulp-util');
-var next         = require('gulp-next');
-var pkg          = require(process.cwd() + '/package.json');
-var spawn        = require('child_process').spawn;
+'use strict';
 
-var data = {
+const AWS          = require('aws-sdk');
+const fs           = require('fs-extra');
+const path         = require('path');
+const async        = require('async');
+const chalk        = require('chalk');
+const ncp          = require('ncp');
+const recursive    = require('recursive-readdir');
+const gulp         = require('gulp');
+const install      = require('gulp-install');
+const gutil        = require('gulp-util');
+const next         = require('gulp-next');
+const pkg          = require(process.cwd() + '/package.json');
+const spawn        = require('child_process').spawn;
+const Promise      = require('bluebird');
+const glob         = require('glob');
+
+let data = {
   folderPath: null,   //e.g. ./functions/hello-world
   distPath: null,     //e.g. ./dist/hello-world
   environment: null   //e.g. staging
 };
 
 
-var clean = function(callback) {
+let clean = (callback) => {
   gutil.log('cleanup prep...');
 
-  fs.remove(path.join(process.cwd(), 'dist'), function(err) {
+  fs.remove(path.join(process.cwd(), 'dist'), (err) => {
     if (err) return callback(err);
-    fs.ensureDir(data.distPath, function(err) { callback(err); });
+    fs.ensureDir(data.distPath, (err) => callback(err));
   });
 };
 
-var prep = function(callback) {
+let prep = (callback) => {
   gutil.log('prep...');
   fs.ensureDir(data.distPath, function(err) { callback(err); });
   gutil.log('creating package.json for installing package dependencies...');
-  var pkg = require(path.join(process.cwd(), 'package.json'));
-  var re = /require\(["'].*["']\)/g;
-  var functionFile = path.join(data.folderPath, data.functionName + '.js');
-  var text = fs.readFileSync(functionFile, {encoding:'utf-8'});
-  var reqs = text.match(re);
-  var dependencies = {};
+  let pkg = require(path.join(process.cwd(), 'package.json'));
+  let re = /require\(["'].*["']\)/g;
+  let functionFile = path.join(data.folderPath, data.functionName + '.js');
+  let text = fs.readFileSync(functionFile, {encoding:'utf-8'});
+  let reqs = text.match(re);
+  let dependencies = {};
 
   reqs.forEach(function (r) {
-    var m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
+    let m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
     if (pkg.dependencies[m]) {
       dependencies[m] = pkg.dependencies[m];
     }
   });
 
-  var packagePath = path.join(data.distPath, 'package.json');
-  var packages = {dependencies: dependencies};
+  let packagePath = path.join(data.distPath, 'package.json');
+  let packages = {dependencies: dependencies};
   fs.writeFile(packagePath, JSON.stringify(packages, null, 2), callback);
 };
 
-var yarn = function(callback) {
-  var y = spawn('yarn');
+let yarn = (callback) => {
+  let y = spawn('yarn');
 
   y.stdout.on('data', (data) => {
     gutil.log(data.toString());
@@ -63,13 +67,14 @@ var yarn = function(callback) {
   });
 
   y.on('close', (code) => {
-    // var tsHash = tsData.toString();
+    // let tsHash = tsData.toString();
     // console.log('tsHash', tsHash);
     callback(null);
   });
 };
 
-var npm = function (callback) {
+let npm = (callback) => {
+
   if (data.localNodeModules) {
     gutil.log('copying NPM modules for deployment...');
     fs.copySync(
@@ -80,22 +85,22 @@ var npm = function (callback) {
   }
   else {
     gutil.log('creating package.json for installing package dependencies...');
-    var pkg = require(path.join(process.cwd(), 'package.json'));
-    var re = /require\(["'].*["']\)/g;
-    var functionFile = path.join(data.folderPath, data.functionName + '.js');
-    var text = fs.readFileSync(functionFile, {encoding:'utf-8'});
-    var reqs = text.match(re);
-    var dependencies = {};
+    let pkg = require(path.join(process.cwd(), 'package.json'));
+    let re = /require\(["'].*["']\)/g;
+    let functionFile = path.join(data.folderPath, data.functionName + '.js');
+    let text = fs.readFileSync(functionFile, {encoding:'utf-8'});
+    let reqs = text.match(re);
+    let dependencies = {};
 
     reqs.forEach(function (r) {
-      var m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
+      let m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
       if (pkg.dependencies[m]) {
         dependencies[m] = pkg.dependencies[m];
       }
     });
 
-    var packagePath = path.join(data.distPath, 'package.json');
-    var packages = {dependencies: dependencies};
+    let packagePath = path.join(data.distPath, 'package.json');
+    let packages = {dependencies: dependencies};
     fs.writeFileSync(packagePath, JSON.stringify(packages, null, 2));
     gutil.log('installing function packages from NPM...');
     return gulp.src(packagePath)
@@ -106,12 +111,12 @@ var npm = function (callback) {
   }
 };
 
-var envFile = function (callback) {
+let envFile = (callback) => {
   gutil.log('managing .env file:', data.environment);
   //concat environment specific .env file if there is one
-  var targetedEnv = path.join(data.folderPath, '.env.' + data.environment);
-  var finalEnv = path.join(data.distPath, '.env');
-  var hasTargetedEnv = fs.existsSync(targetedEnv);
+  let targetedEnv = path.join(data.folderPath, '.env.' + data.environment);
+  let finalEnv = path.join(data.distPath, '.env');
+  let hasTargetedEnv = fs.existsSync(targetedEnv);
 
   if (!hasTargetedEnv) {
     gutil.log('no .env found for ' + data.environment);
@@ -125,50 +130,95 @@ var envFile = function (callback) {
   }
 };
 
-var makeDist = function(callback) {
-  gutil.log('creating dist folder...');
+let copyFiles = (callback) => {
+  if (!data.dependencies) return callback(null);
 
-  //copy any file dependencies
-  var globalDependenciesDir = path.resolve(path.dirname(fs.realpathSync(__filename)), '../dependencies');
+  data.globs = [];
+  
 
-  if (data.dependencies) {
-    gutil.log("adding dependencies:", data.dependencies);
-    data.dependencies.forEach(function (file) {
-      if (file == '.env') {
-        gutil.log('skipping .env : handled separately', file);
+  for(let dependency of data.dependencies) {
+
+    let functionDependency = path.join(data.folderPath, dependency);
+    let globalDependency = path.join(data.globalDependenciesDir, dependency);
+
+    if (glob.hasMagic(dependency)) {
+      data.globs.push(dependency);
+    }
+    else {
+      //look in function directory for file
+      if (fs.existsSync(functionDependency)) {
+        gutil.log('Using locally provided dependency:', functionDependency);
+        fs.copySync(functionDependency, path.join(data.distPath, dependency));
       }
-      else {
-        gutil.log('adding dependency:', file);
-        var functionDependency = path.join(data.folderPath, file);
-        var globalDependency = path.join(globalDependenciesDir, file);
-
-        //look in function directory for file
-        if (fs.existsSync(functionDependency)) {
-          gutil.log('Using locally provided dependency:', functionDependency);
-          fs.copySync(functionDependency, path.join(data.distPath, file));
-        }
-        //look in global dependencies folder
-        else if (fs.existsSync(globalDependency)) {
-          gutil.log('Using global dependency:', globalDependency);
-          fs.copySync(globalDependency, path.join(data.distPath, file));
-        }
+      //look in global dependencies folder
+      else if (fs.existsSync(globalDependency)) {
+        gutil.log('Using global dependency:', globalDependency);
+        fs.copySync(globalDependency, path.join(data.distPath, dependency));
       }
-    });
+    }
   }
 
+  callback(null);
+};
+
+
+let processGlobs = (callback) => {
+  async.each(data.globs, (spec, globCallback) => {
+
+    let functionDependency = path.join(data.folderPath, spec);
+    let globalDependency = path.join(data.globalDependenciesDir, spec);
+
+    glob(functionDependency, (err, matches) => {
+      if (err) return globCallback(err);
+
+      //for each file found in the glob...
+      async.each(matches, (match, matchesCallback) => {
+
+        fs.lstat(match, (err, stat) => {
+          if (err) return matchesCallback(err);
+
+          if (stat.isFile()) {
+            let targetPath = path.join(data.distPath, match.replace(data.folderPath, ''));
+            fs.ensureDir(path.dirname(targetPath), (err) => {
+              if (err) return matchesCallback(err);
+
+              gutil.log(targetPath);
+              fs.copy(match, targetPath, matchesCallback);
+            });
+          }
+          else {
+            matchesCallback();
+          }
+
+        });
+
+      }, (err) => {
+        if (err) globCallback(err);
+        else globCallback();
+      });
+
+    });
+
+  }, (err) => {
+    if (err) callback(err);
+    else callback(null);
+  });
+};
+
+let copyFunction = (callback) => {
   //copy function itself
-  var functionFile = path.join(data.folderPath, data.functionName + '.js');
+  let functionFile = path.join(data.folderPath, data.functionName + '.js');
   gutil.log('copying function:', functionFile);
   fs.copySync(functionFile, path.join(data.distPath, data.functionName + '.js'));
 
   //settings
-  var settingsFile =  process.cwd() + '/functions/' + data.functionName + '/settings';
+  let settingsFile =  process.cwd() + '/functions/' + data.functionName + '/settings';
   if (!data.envPrefixes) settingsFile += '.json';
   else settingsFile += '-' + data.environment + '.json'; 
 
   if (fs.existsSync(settingsFile)) {
     //read settings file for environment
-    var s = JSON.parse(fs.readFileSync(settingsFile, {encoding:'utf8'}));
+    let s = JSON.parse(fs.readFileSync(settingsFile, {encoding:'utf8'}));
     //add "env"
     s.env = data.environment;
     //write to settings.json
@@ -179,14 +229,14 @@ var makeDist = function(callback) {
   callback(null);
 };
 
-var zipFiles = function(callback) {
+let zipFiles = (callback) => {
   gutil.log('zipping files...');
 
 
   if (process.platform !== 'win32') {
     //use native zip
-    var cmd = 'zip -r ' + data.distPath + '.zip' + ' .';
-    var exec = require('child_process').exec;
+    let cmd = 'zip -r ' + data.distPath + '.zip' + ' .';
+    let exec = require('child_process').exec;
 
     exec(cmd, {
       cwd: data.distPath,
@@ -199,18 +249,18 @@ var zipFiles = function(callback) {
   else {
     //use npm lib for zipping
     // NODE-ZIP
-    var zip = new require('node-zip')();
-    var search = data.distPath;
+    let zip = new require('node-zip')();
+    let search = data.distPath;
     recursive(search, function(err, files) {
 
       files.forEach(function(file) {
-        var path = file.substring(file.indexOf(search) + search.length + 1);
+        let path = file.substring(file.indexOf(search) + search.length + 1);
         if (fs.lstatSync(file).isFile()) {
           zip.file(path, fs.readFileSync(file));
         }
       });
 
-      var buffer = zip.generate({type: 'nodebuffer', compression: 'DEFLATE'});
+      let buffer = zip.generate({type: 'nodebuffer', compression: 'DEFLATE'});
 
       fs.writeFile(data.distPath + '.zip', buffer, function(err) {
         if (err) callback(err)
@@ -222,13 +272,13 @@ var zipFiles = function(callback) {
   }
 };
 
-var upload = function(callback) {
+let upload = (callback) => {
   //set region from lambinator.config:region
   AWS.config.update({region:data.region});
   AWS.config.apiVersions = {lambda: '2015-03-31'};
 
   //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
-  var envPath = path.join(data.distPath, '.env');
+  let envPath = path.join(data.distPath, '.env');
   if (fs.existsSync(envPath)) {
     gutil.log('.env file exists, checking for AWS credentials...');
     require('dotenv').load({path: envPath});
@@ -250,16 +300,16 @@ var upload = function(callback) {
       lambda = new AWS.Lambda();
   }
 
-  var functionName = data.environment + '-' + data.functionName;
+  let functionName = data.environment + '-' + data.functionName;
   if (!data.envPrefixes) {
     functionName = data.functionName;
   }
-  var zipFile = data.distPath + '.zip';
+  let zipFile = data.distPath + '.zip';
 
-  var createLambda = function() {
+  let createLambda = function() {
     gutil.log('Updating function ' + functionName);
 
-    var params = {
+    let params = {
       Code: {
         ZipFile: fs.readFileSync(zipFile)
       },
@@ -285,8 +335,8 @@ var upload = function(callback) {
     });
   }
 
-  var updateLambda = function() {
-    var params = {
+  let updateLambda = () => {
+    let params = {
       FunctionName: functionName,
       ZipFile: fs.readFileSync(zipFile)
     };
@@ -300,7 +350,7 @@ var upload = function(callback) {
       }
       else {
 
-        var configParams = {
+        let configParams = {
           FunctionName: functionName,
           Handler: data.handler,
           Role: data.roleArn,
@@ -326,7 +376,7 @@ var upload = function(callback) {
     });
   }
 
-  var startUpload = function() {
+  let startUpload = () => {
     gutil.log('Getting current lambda function info (if any)...');
     lambda.getFunction({FunctionName: functionName}, function(err, result) {
       if (err) {
@@ -335,7 +385,7 @@ var upload = function(callback) {
           createLambda();
         }
         else {
-          var warning = 'AWS API request failed. '
+          let warning = 'AWS API request failed. '
           warning += 'Check your AWS credentials and permissions.'
           gutil.log(chalk.yellow(warning), JSON.stringify(lambda, null, 2));
           callback(new Error(warning));
@@ -351,9 +401,9 @@ var upload = function(callback) {
   startUpload();
 };
 
-var main = function (functionName, environment, options) {
-  var folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
-  var action = options && options.zipOnly ? 'zipping' : 'deploying';
+let main = (functionName, environment, options) => {
+  let folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
+  let action = options && options.zipOnly ? 'zipping' : 'deploying';
 
   //set up global data
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
@@ -362,6 +412,8 @@ var main = function (functionName, environment, options) {
   data.environment = !data.envPrefixes ? 'production' : environment;
   data.uploadOnly = options && options.uploadOnly;
   data.localNodeModules = options && options.localNodeModules;
+  data.globalDependenciesDir = path.resolve(path.dirname(fs.realpathSync(__filename)), '../dependencies');
+  
 
   if (data.testEvents) delete data.testEvents;
   if (data.defaultEvent) delete data.defaultEvent;
@@ -369,8 +421,8 @@ var main = function (functionName, environment, options) {
 
   gutil.log('data', data);
 
-  var functionsToRun = [clean, npm, envFile, makeDist, zipFiles];
-  // var functionsToRun = [prep, yarn, envFile, makeDist, zipFiles];
+  let functionsToRun = [clean, envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles];
+  // let functionsToRun = [prep, yarn, envFile, makeDist, zipFiles];
   if (data.uploadOnly) functionsToRun = [upload];
   else if (action != 'zipping') functionsToRun.push(upload);
 

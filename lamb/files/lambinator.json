@@ -18,7 +18,10 @@
       "Records": [
         {
           "Sns": {
-            "Message": "YOUR DATA HERE"
+            "Message": {
+              "uuid": "abcde-12345",
+              "url": "https://example.com"
+            }
           }
         }
       ]
@@ -43,6 +46,6 @@
       "key3": "value 3"
     }
   },
-  "defaultEvent": "s3",
+  "defaultEvent": "sns",
   "defaultEnv": "staging"
 }

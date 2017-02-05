@@ -29,11 +29,13 @@
   "dependencies": {
     "async": "^2.1.4",
     "aws-sdk": "^2.7.20",
+    "bluebird": "^3.4.7",
     "chalk": "^1.1.3",
     "commander": "^2.9.0",
     "dotenv": "^2.0.0",
     "es6-promise": "^4.0.5",
     "fs-extra": "^1.0.0",
+    "glob": "^7.1.1",
     "gulp": "^3.9.1",
     "gulp-install": "^0.6.0",
     "gulp-next": "^1.0.8",
@@ -43,7 +45,10 @@
     "ncp": "^2.0.0",
     "node-zip": "^1.1.1",
     "recursive-readdir": "^2.1.0",
-    "require-dir": "^0.3.1"
+    "require-dir": "^0.3.1",
+    "tabtab": "^2.2.2"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "short-uuid": "^2.2.0"
+  }
 }
