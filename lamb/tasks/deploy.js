@@ -112,7 +112,7 @@ let npm = (callback) => {
 };
 
 let envFile = (callback) => {
-  gutil.log('managing .env file:', data.environment);
+  gutil.log('checking for .env file for:', data.environment);
   //concat environment specific .env file if there is one
   let targetedEnv = path.join(data.folderPath, '.env.' + data.environment);
   let finalEnv = path.join(data.distPath, '.env');
@@ -276,6 +276,7 @@ let upload = (callback) => {
   //set region from lambinator.config:region
   AWS.config.update({region:data.region});
   AWS.config.apiVersions = {lambda: '2015-03-31'};
+  let lambda;
 
   //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
   let envPath = path.join(data.distPath, '.env');
@@ -291,13 +292,13 @@ let upload = (callback) => {
       });
     }
     else {
-      gutil.log('.env has no AWS credentials - using shared credentials file (j.mp/awscredentials)...');
+      gutil.log('.env has no AWS credentials - using shared credentials file (http://j.mp/awscredentials)...');
       lambda = new AWS.Lambda();
     }
   }
   else {
-      gutil.log('No .env file - using shared credentials file (j.mp/awscredentials)...');
-      lambda = new AWS.Lambda();
+    gutil.log('No .env file - using shared credentials file (http://j.mp/awscredentials)...');
+    lambda = new AWS.Lambda();
   }
 
   let functionName = data.environment + '-' + data.functionName;
