@@ -15,7 +15,7 @@ AWS.config.update({ region: settings.region || 'us-east-1' });
 let validate = (data) => {
   return new Promise((resolve, reject) => {
     //check required fields in message
-    let requiredFields = ['myField', 'anotherField'];
+    let requiredFields = ['uuid', 'url'];
     for (let field of requiredFields) {
       if (!data.message[field]) return reject(new Error(field + ' is required'));
     }
@@ -24,7 +24,8 @@ let validate = (data) => {
     data.uuid = data.message.uuid || short().new();
 
     //logger
-    log = logger({uuid: data.uuid, env: settings.env});
+    log = console;
+    if (!log.error) log.error = log.info;
 
     resolve(data);
   });
