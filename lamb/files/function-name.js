@@ -4,7 +4,7 @@ process.env['PATH'] = process.env['PATH'] + ':' + process.env['LAMBDA_TASK_ROOT'
 
 const fs = require('fs-extra');
 const path = require('path');
-const settings = require(path.join(process.cwd(), 'settings-production.json'));
+const settings = require(path.join(process.cwd(), 'settings.json'));
 const short = require('short-uuid');
 const Promise = require('bluebird');
 const AWS = require('aws-sdk');
@@ -14,6 +14,10 @@ AWS.config.update({ region: settings.region || 'us-east-1' });
 
 let validate = (data) => {
   return new Promise((resolve, reject) => {
+    //logger
+    log = console;
+    if (!log.error) log.error = log.info;
+
     //check required fields in message
     let requiredFields = ['uuid', 'url'];
     for (let field of requiredFields) {
@@ -22,10 +26,6 @@ let validate = (data) => {
 
     //initializations
     data.uuid = data.message.uuid || short().new();
-
-    //logger
-    log = console;
-    if (!log.error) log.error = log.info;
 
     resolve(data);
   });
