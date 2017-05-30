@@ -4,7 +4,7 @@ process.env['PATH'] = process.env['PATH'] + ':' + process.env['LAMBDA_TASK_ROOT'
 
 const fs = require('fs-extra');
 const path = require('path');
-const settings = require(path.join(process.cwd(), 'settings-production.json'));
+const settings = require(path.join(process.cwd(), 'settings.json'));
 const short = require('short-uuid');
 const Promise = require('bluebird');
 const AWS = require('aws-sdk');
