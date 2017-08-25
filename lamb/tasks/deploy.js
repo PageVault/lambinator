@@ -15,6 +15,7 @@ const pkg          = require(process.cwd() + '/package.json');
 const spawn        = require('child_process').spawn;
 const Promise      = require('bluebird');
 const glob         = require('glob');
+const babel        = require('babel-core');
 
 let data = {
   folderPath: null,   //e.g. ./functions/hello-world
@@ -206,11 +207,31 @@ let processGlobs = (callback) => {
 };
 
 let copyFunction = (callback) => {
-  //copy function itself
   let functionFile = path.join(data.folderPath, data.functionName + '.js');
-  gutil.log('copying function:', functionFile);
-  fs.copySync(functionFile, path.join(data.distPath, data.functionName + '.js'));
+  let outputFile = path.join(data.distPath, data.functionName + '.js');
 
+  // transform function
+  if(data.runtime == 'babel-nodejs6.10') {
+    // let output = babel.transformFileSync(functionFile, {plugins: ["transform-async-to-generator"]}).code;
+    let output = babel.transformFileSync(functionFile, {
+      presets: [
+        ["env", {
+          "targets": {
+            "node": ["6.10"]
+          }
+        }]
+      ]
+    }).code;
+    
+    fs.writeFileSync(outputFile, output, {encoding: 'utf-8'});
+    data.runtime = 'nodejs6.10';
+  }
+  else {
+    // copy function itself
+    gutil.log('copying function:', functionFile);
+    fs.copySync(functionFile, outputFile);
+  }
+    
   //settings
   let settingsFile =  process.cwd() + '/functions/' + data.functionName + '/settings';
   if (!data.envPrefixes) settingsFile += '.json';
@@ -228,6 +249,7 @@ let copyFunction = (callback) => {
 
   callback(null);
 };
+
 
 let zipFiles = (callback) => {
   gutil.log('zipping files...');

@@ -12,10 +12,10 @@ let log;
 
 AWS.config.update({ region: settings.region || 'us-east-1' });
 
-let validate = (data) => {
+let validate = (state) => {
   return new Promise((resolve, reject) => {
     //initializations
-    data.uuid = data.message.uuid || short().new();
+    state.uuid = state.message.uuid || short().new();
 
     //logger
     log = console;
@@ -24,10 +24,10 @@ let validate = (data) => {
     //check required fields in message
     let requiredFields = ['uuid', 'url'];
     for (let field of requiredFields) {
-      if (!data.message[field]) return reject(new Error(field + ' is required'));
+      if (!state.message[field]) return reject(new Error(field + ' is required'));
     }
 
-    resolve(data);
+    resolve(state);
   });
 };
 
@@ -36,11 +36,11 @@ let main = (event, context, next) => {
   context.callbackWaitsForEmptyEventLoop = false;
   let message = event.Records[0].Sns.Message;
   if (typeof message == 'string') message = JSON.parse(message);
-  let data = { message: message };
+  let state = { message: message };
 
-  validate(data)
-    .then(data => {
-      log.info('Done!', data);
+  validate(state)
+    .then(state => {
+      log.info('Done!', state);
       next(null);
     })
     .catch(err => {
