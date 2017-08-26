@@ -4,7 +4,7 @@
   "handler":        "{{function-name}}.handler",
   "description":    "",
   "roleArn": "arn:aws:iam::ACCOUNT_ID:role/LAMBDA_EXEC_ROLE_NAME",
-  "runtime": "nodejs4.3",
+  "runtime": "babel-nodejs6.10",
   "envPrefixes": true,
   "VpcConfig": {
     "SecurityGroupIds": [],

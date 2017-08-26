@@ -37,8 +37,8 @@ program
   .option("-d, --data [jsonData]", "JSON data to allow function to parse through process.argv")
   .action(function (func, options) {
     var testEvent = options.mock;
-    var env = options.env;
-    logHeader(func, null, 'running function locally', function() { tasks.run(func, testEvent, env); });
+    var env = options.env || 'staging';
+    logHeader(func, null, 'running function locally', function() { tasks.deploy(func, env, {action: 'run', testEvent: testEvent}); });
   });
 
 program
@@ -49,7 +49,7 @@ program
   .action(function (func, options) {
     var env = options.env || 'staging';
     var uploadOnly = options.uploadOnly;
-    logHeader(func, null, 'deploying function', function() { tasks.deploy(func, env, { uploadOnly: uploadOnly }); });
+    logHeader(func, null, 'deploying function', function() { tasks.deploy(func, env, { action: 'upload'}); });
   });
 
 program
@@ -60,7 +60,7 @@ program
   .option("-l, --local-node-modules", "Uses cached node_modules instead of `npm install`")
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, null, 'zipping function', function() { tasks.deploy(func, env, { zipOnly: true, localNodeModules: options.localNodeModules }); });
+    logHeader(func, null, 'zipping function', function() { tasks.deploy(func, env, { action: 'zip', localNodeModules: options.localNodeModules }); });
   });
 
 program

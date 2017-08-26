@@ -1,13 +1,11 @@
-'use strict';
-
 process.env['PATH'] = process.env['PATH'] + ':' + process.env['LAMBDA_TASK_ROOT'];
 
-const fs = require('fs-extra');
+const Promise = require('bluebird');
+const fs = require('fs');
 const path = require('path');
 const settings = require(path.join(process.cwd(), 'settings.json'));
-const short = require('short-uuid');
-const Promise = require('bluebird');
 const AWS = require('aws-sdk');
+
 let log;
 
 AWS.config.update({ region: settings.region || 'us-east-1' });

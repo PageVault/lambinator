@@ -14,11 +14,12 @@ _n._
 
 There are several projects emerging in this space, but none quite met our needs:
 
-- Ability to test locally with external binaries available locally in your PATH, but deployed to AWS Lambda with Linux-compiled versions
+- Ability to test locally with external binaries available in your PATH, but deploy to AWS Lambda with Linux-compiled binaries
 - Ability to manage several functions in a single repository
+- Ability to write in current JavaScript syntax and transpile to Node6.10 for deployment
 - Desire to create a growing registry of canned functions that you can install, modify and deploy for your own use
 
-Lambinator currently handles the first two scenarios, and will eventually handle all 3.
+Lambinator currently handles the first three scenarios, and will eventually handle all 4.
 
 # How
 
@@ -32,6 +33,15 @@ Lambinator currently handles the first two scenarios, and will eventually handle
 * `lamb deploy my-function-name --env development` -- deploy a function to AWS Lambda
 * _future_ `lamb list` -- list functions in lambinator registry
 * _future_ `lamb install registered-function-name` -- download a function from the lambinator registry for editing
+
+## Example
+### Install Lambinator, create a new function, and run it
+``` 
+npm install -g lambinator
+mkdir lamb-test && cd lamb-test
+lamb new hello-world
+lamb run hello-world
+```
 
 ## Detailed Usage
 ### AWS Credentials

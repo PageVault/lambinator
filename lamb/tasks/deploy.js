@@ -25,7 +25,7 @@ let data = {
 
 
 let clean = (callback) => {
-  gutil.log('cleanup prep...');
+  gutil.log('clean...');
 
   fs.remove(path.join(process.cwd(), 'dist'), (err) => {
     if (err) return callback(err);
@@ -33,48 +33,49 @@ let clean = (callback) => {
   });
 };
 
-let prep = (callback) => {
-  gutil.log('prep...');
-  fs.ensureDir(data.distPath, function(err) { callback(err); });
-  gutil.log('creating package.json for installing package dependencies...');
-  let pkg = require(path.join(process.cwd(), 'package.json'));
-  let re = /require\(["'].*["']\)/g;
-  let functionFile = path.join(data.folderPath, data.functionName + '.js');
-  let text = fs.readFileSync(functionFile, {encoding:'utf-8'});
-  let reqs = text.match(re);
-  let dependencies = {};
+// let prep = (callback) => {
+//   gutil.log('prep...');
+//   fs.ensureDir(data.distPath, function(err) { callback(err); });
+//   gutil.log('creating package.json for installing package dependencies...');
+//   let pkg = require(path.join(process.cwd(), 'package.json'));
+//   let re = /require\(["'].*["']\)/g;
+//   let functionFile = path.join(data.folderPath, data.functionName + '.js');
+//   let text = fs.readFileSync(functionFile, {encoding:'utf-8'});
+//   let reqs = text.match(re);
+//   let dependencies = {};
 
-  reqs.forEach(function (r) {
-    let m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
-    if (pkg.dependencies[m]) {
-      dependencies[m] = pkg.dependencies[m];
-    }
-  });
+//   reqs.forEach(function (r) {
+//     let m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
+//     if (pkg.dependencies[m]) {
+//       dependencies[m] = pkg.dependencies[m];
+//     }
+//   });
 
-  let packagePath = path.join(data.distPath, 'package.json');
-  let packages = {dependencies: dependencies};
-  fs.writeFile(packagePath, JSON.stringify(packages, null, 2), callback);
-};
+//   let packagePath = path.join(data.distPath, 'package.json');
+//   let packages = {dependencies: dependencies};
+//   fs.writeFile(packagePath, JSON.stringify(packages, null, 2), callback);
+// };
 
-let yarn = (callback) => {
-  let y = spawn('yarn');
+// let yarn = (callback) => {
+//   let y = spawn('yarn');
 
-  y.stdout.on('data', (data) => {
-    gutil.log(data.toString());
-  });
+//   y.stdout.on('data', (data) => {
+//     gutil.log(data.toString());
+//   });
 
-  y.stderr.on('err', (err) => {
-    callback(err);
-  });
+//   y.stderr.on('err', (err) => {
+//     callback(err);
+//   });
 
-  y.on('close', (code) => {
-    // let tsHash = tsData.toString();
-    // console.log('tsHash', tsHash);
-    callback(null);
-  });
-};
+//   y.on('close', (code) => {
+//     // let tsHash = tsData.toString();
+//     // console.log('tsHash', tsHash);
+//     callback(null);
+//   });
+// };
 
 let npm = (callback) => {
+  gutil.log('npm...');
 
   if (data.localNodeModules) {
     gutil.log('copying NPM modules for deployment...');
@@ -85,8 +86,9 @@ let npm = (callback) => {
     callback(null);
   }
   else {
-    gutil.log('creating package.json for installing package dependencies...');
+    gutil.log('...creating package.json for installing package dependencies...');
     let pkg = require(path.join(process.cwd(), 'package.json'));
+    // search for `require` statements in function file to determine what packages are needed at runtime
     let re = /require\(["'].*["']\)/g;
     let functionFile = path.join(data.folderPath, data.functionName + '.js');
     let text = fs.readFileSync(functionFile, {encoding:'utf-8'});
@@ -100,6 +102,7 @@ let npm = (callback) => {
       }
     });
 
+    fs.ensureDirSync(data.distPath);
     let packagePath = path.join(data.distPath, 'package.json');
     let packages = {dependencies: dependencies};
     fs.writeFileSync(packagePath, JSON.stringify(packages, null, 2));
@@ -132,6 +135,8 @@ let envFile = (callback) => {
 };
 
 let copyFiles = (callback) => {
+  gutil.log('copyFiles...');
+
   if (!data.dependencies) return callback(null);
 
   data.globs = [];
@@ -164,6 +169,8 @@ let copyFiles = (callback) => {
 
 
 let processGlobs = (callback) => {
+  gutil.log('processGlobs...');
+
   async.each(data.globs, (spec, globCallback) => {
 
     let functionDependency = path.join(data.folderPath, spec);
@@ -207,11 +214,14 @@ let processGlobs = (callback) => {
 };
 
 let copyFunction = (callback) => {
+  gutil.log('copyFunction...');
+
   let functionFile = path.join(data.folderPath, data.functionName + '.js');
   let outputFile = path.join(data.distPath, data.functionName + '.js');
 
   // transform function
   if(data.runtime == 'babel-nodejs6.10') {
+    data.runDir = data.distPath;
     // let output = babel.transformFileSync(functionFile, {plugins: ["transform-async-to-generator"]}).code;
     let output = babel.transformFileSync(functionFile, {
       presets: [
@@ -227,15 +237,17 @@ let copyFunction = (callback) => {
     data.runtime = 'nodejs6.10';
   }
   else {
+    data.runDir = data.folderPath;
     // copy function itself
     gutil.log('copying function:', functionFile);
     fs.copySync(functionFile, outputFile);
   }
     
   //settings
-  let settingsFile =  process.cwd() + '/functions/' + data.functionName + '/settings';
+  let settingsFile =  data.folderPath + '/settings';
   if (!data.envPrefixes) settingsFile += '.json';
   else settingsFile += '-' + data.environment + '.json'; 
+  gutil.log('settings file:', settingsFile);
 
   if (fs.existsSync(settingsFile)) {
     //read settings file for environment
@@ -244,16 +256,17 @@ let copyFunction = (callback) => {
     s.env = data.environment;
     //write to settings.json
     gutil.log('write settings-' + data.environment + '.json to settings.json');
-    fs.writeFileSync(path.join(data.distPath, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
+    fs.writeFileSync(path.join(data.runDir, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
   }
 
   callback(null);
 };
 
 
-let zipFiles = (callback) => {
-  gutil.log('zipping files...');
 
+
+let zipFiles = (callback) => {
+  gutil.log('zipFiles...');
 
   if (process.platform !== 'win32') {
     //use native zip
@@ -294,7 +307,104 @@ let zipFiles = (callback) => {
   }
 };
 
+let runFunction = (callback) => {
+  gutil.log('runFunction...');
+
+  var startTime = new Date();
+  var timeout; 
+  
+  var functionFile = path.join(data.distPath, data.functionName + '.js');
+  if (!fs.existsSync(functionFile)) {
+    console.log('Could not find function:', functionFile);
+    console.log('Make sure you are using `lamb run` from your project root directory.');
+    process.exit();
+  }
+
+  var funcData = require(path.join(data.folderPath, 'lambinator.json'));
+  timeout = funcData.timeout ? (funcData.timeout * 1000) : 300000;
+
+  //change working directory
+  if (!fs.existsSync(data.distPath)) {
+    console.log('Could not find a function to run at:', data.distPath);
+    console.log('Make sure you are using `lamb run` from your project root directory.');
+    process.exit();
+  }
+
+  console.log('Changing working directory to:', data.runDir);
+  process.chdir(data.runDir);
+
+  //set env for lambinator
+  process.env.lambinator = true;
+
+  //mock context
+  var context = {
+
+    done: function(error, data) {
+      if (error) {
+        console.log(chalk.red('error running function'), error);
+        process.exit(1);
+      }
+      else {
+        console.log(chalk.green('function ran and returned:'), data);
+        process.exit(0);
+      }
+    },
+
+    fail: function(error) {
+      console.log(chalk.red('error running function'), error);
+      process.exit(1);
+    },
+
+    succeed: function (data) {
+      console.log(chalk.green('function ran and returned:'), data);
+      process.exit(0);
+    },
+
+    getRemainingTimeInMillis: function () {
+      return timeout - ((new Date) - startTime);
+    }
+  };
+
+  //custom script?
+  if (funcData.customScript) {
+    try {
+      //call custom script and pass in mock context
+      console.log('working dir:', process.cwd());
+      var reqScript = process.cwd() + '/' + funcData.customScript;
+      console.log('requiring script:', reqScript);
+      require(reqScript)(context);
+    }
+    catch(err) {
+      context.fail(err);
+    }
+  }
+  else {
+    //get mock event
+    var evt = funcData.testEvents[data.testEvent || funcData.defaultEvent];
+    if (!evt) {
+      console.log('Could not find a mock event named "' + (testEvent || funcData.defaultEvent) + '"');
+      process.exit();
+    }
+    gutil.log('mock event:', evt);
+
+    //spin it up using mock event
+    gutil.log('running function...');
+    try {
+      var funcToRun = require(process.cwd() + '/' + data.functionName);
+      funcToRun.handler(evt, context, context.done);
+    }
+    catch (err) {
+      gutil.log(gutil.colors.red('error running function'));
+      console.log();
+      console.log((err.stack) ? err.stack : err.toString());
+      console.log();
+    }
+  }
+}
+
 let upload = (callback) => {
+  gutil.log('upload...');
+
   //set region from lambinator.config:region
   AWS.config.update({region:data.region});
   AWS.config.apiVersions = {lambda: '2015-03-31'};
@@ -425,18 +535,21 @@ let upload = (callback) => {
 };
 
 let main = (functionName, environment, options) => {
+  gutil.log('main...');
+
   let folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
-  let action = options && options.zipOnly ? 'zipping' : 'deploying';
+  let action = options.action;
 
   //set up global data
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
+  data.functionName = functionName;
   data.folderPath = folderPath;
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = !data.envPrefixes ? 'production' : environment;
   data.uploadOnly = options && options.uploadOnly;
   data.localNodeModules = options && options.localNodeModules;
   data.globalDependenciesDir = path.resolve(path.dirname(fs.realpathSync(__filename)), '../dependencies');
-  
+  if (data.options && data.options.testEvent) data.testEvent = data.options.testEvent;
 
   if (data.testEvents) delete data.testEvents;
   if (data.defaultEvent) delete data.defaultEvent;
@@ -444,10 +557,22 @@ let main = (functionName, environment, options) => {
 
   gutil.log('data', data);
 
-  let functionsToRun = [clean, envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles];
-  // let functionsToRun = [prep, yarn, envFile, makeDist, zipFiles];
-  if (data.uploadOnly) functionsToRun = [upload];
-  else if (action != 'zipping') functionsToRun.push(upload);
+  let functionsToRun;
+  if (action == 'upload') {
+    functionsToRun = [upload];
+  }
+  else if (action == 'run') {
+    functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, runFunction];
+  }
+  else if (action == 'zip') {
+    functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles];
+  }
+  else if (action == 'deploy') {
+    functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles, upload]; //, zipFiles];
+  }
+  else if (action == 'clean') {
+    functionsToRun = [clean];
+  }
 
   //let the water fall baby
   async.waterfall(functionsToRun, function(err, results) {
