@@ -45,11 +45,9 @@ program
   .command('deploy <function-name>')
   .description('Deploy a function to AWS Lambda, specifying an environment/version prefix')
   .option("-e, --env [environment]", "Which environment to deploy to")
-  .option('-u, --upload-only', 'upload only')
   .action(function (func, options) {
     var env = options.env || 'staging';
-    var uploadOnly = options.uploadOnly;
-    logHeader(func, null, 'deploying function', function() { tasks.deploy(func, env, { action: 'upload'}); });
+    logHeader(func, null, 'deploying function', function() { tasks.deploy(func, env, { action: 'deploy'}); });
   });
 
 program
@@ -61,6 +59,15 @@ program
   .action(function (func, options) {
     var env = options.env || 'staging';
     logHeader(func, null, 'zipping function', function() { tasks.deploy(func, env, { action: 'zip', localNodeModules: options.localNodeModules }); });
+  });
+
+program
+  .command('upload <function-name>')
+  .description('Uploads a packaged/zipped function to AWS Lambda, specifying an environment/version prefix')
+  .option("-e, --env [environment]", "Which environment to deploy to")
+  .action(function (func, options) {
+    var env = options.env || 'staging';
+    logHeader(func, null, 'deploying function', function() { tasks.deploy(func, env, { action: 'upload'}); });
   });
 
 program

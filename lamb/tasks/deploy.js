@@ -257,6 +257,7 @@ let copyFunction = (callback) => {
     //write to settings.json
     gutil.log('write settings-' + data.environment + '.json to settings.json');
     fs.writeFileSync(path.join(data.runDir, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
+    fs.writeFileSync(path.join(data.distPath, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
   }
 
   callback(null);
@@ -546,8 +547,7 @@ let main = (functionName, environment, options) => {
   data.folderPath = folderPath;
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = !data.envPrefixes ? 'production' : environment;
-  data.uploadOnly = options && options.uploadOnly;
-  data.localNodeModules = options && options.localNodeModules;
+  data.localNodeModules = (options && options.localNodeModules) || false;
   data.globalDependenciesDir = path.resolve(path.dirname(fs.realpathSync(__filename)), '../dependencies');
   if (data.options && data.options.testEvent) data.testEvent = data.options.testEvent;
 
