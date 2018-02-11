@@ -4,7 +4,7 @@ var gulp          = require('gulp')
     , fs          = require('fs-extra')
     , chalk       = require('chalk')
     , path        = require('path')
-    , gutil       = require('gulp-util')
+    , fancy       = require('fancy-log')
     ;
 
 var main = function(func) {
@@ -26,7 +26,7 @@ var main = function(func) {
     .pipe(gulp.dest('./functions/' + func));
 
 
-  gutil.log(func + ' created at ' + path.resolve('./functions/' + func));
+  fancy.info(func + ' created at ' + path.resolve('./functions/' + func));
 };
 
 module.exports = main;

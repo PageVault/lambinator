@@ -18,10 +18,7 @@
       "Records": [
         {
           "Sns": {
-            "Message": {
-              "uuid": "abcde-12345",
-              "url": "https://example.com"
-            }
+            "Message": "abcde-12345"
           }
         }
       ]
@@ -31,10 +28,10 @@
             {
                 "s3": {
                     "bucket": {
-                        "name": "look-ma-no-servers"
+                        "name": "my-bucket-name"
                     },
                     "object": {
-                        "key": "repos.html"
+                        "key": "object-key"
                     }
                 }
             }
