@@ -1,6 +1,6 @@
 {
   "name": "lambinator",
-  "version": "0.20.4",
+  "version": "0.20.5",
   "description": "A template project for managing a suite of AWS Lambda functions",
   "main": "gulpfile.js",
   "scripts": {
