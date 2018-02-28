@@ -38,7 +38,7 @@ program
   .action(function (func, options) {
     var testEvent = options.mock;
     var env = options.env || 'staging';
-    logHeader(func, null, 'running function locally', function() { tasks.deploy(func, env, {action: 'run', testEvent: testEvent}); });
+    logHeader(func, env, 'running function locally', function() { tasks.deploy(func, env, {action: 'run', testEvent: testEvent}); });
   });
 
 program
@@ -47,7 +47,7 @@ program
   .option("-e, --env [environment]", "Which environment to deploy to")
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, null, 'deploying function', function() { tasks.deploy(func, env, { action: 'deploy'}); });
+    logHeader(func, env, 'deploying function', function() { tasks.deploy(func, env, { action: 'deploy'}); });
   });
 
 program
@@ -58,7 +58,7 @@ program
   .option("-l, --local-node-modules", "Uses cached node_modules instead of `npm install`")
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, null, 'zipping function', function() { tasks.deploy(func, env, { action: 'zip', localNodeModules: options.localNodeModules }); });
+    logHeader(func, env, 'zipping function', function() { tasks.deploy(func, env, { action: 'zip', localNodeModules: options.localNodeModules }); });
   });
 
 program
@@ -67,7 +67,7 @@ program
   .option("-e, --env [environment]", "Which environment to deploy to")
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, null, 'deploying function', function() { tasks.deploy(func, env, { action: 'upload'}); });
+    logHeader(func, env, 'deploying function', function() { tasks.deploy(func, env, { action: 'upload'}); });
   });
 
 program

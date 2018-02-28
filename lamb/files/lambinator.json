@@ -2,8 +2,9 @@
   "region": "us-east-1",
   "functionName":  "{{function-name}}",
   "handler":        "{{function-name}}.handler",
-  "description":    "",
-  "roleArn": "arn:aws:iam::ACCOUNT_ID:role/LAMBDA_EXEC_ROLE_NAME",
+  "description":    "{{function-name}} created on {{created-date}}",
+  "roleName": "{{default-role-name}}",
+  "snsTopic": "{{function-name}}",
   "runtime": "babel-nodejs6.10",
   "envPrefixes": true,
   "VpcConfig": {

@@ -18,6 +18,8 @@ var main = function(func) {
   //copy files and replace template text
   gulp.src([filesDir + '/*.json', filesDir + '/.env.sample', filesDir + '/readme.md', '!' + filesDir + '/function-name.js'])
     .pipe(replace('{{function-name}}', func))
+    .pipe(replace('{{created-date}}', new Date()))
+    .pipe(replace('{{default-role-name}}', 'lambda_s3_exec_role'))
     .pipe(gulp.dest('./functions/' + func));
 
   //copy main function file and rename

@@ -23,8 +23,17 @@ let data = {
   environment: null   //e.g. staging
 };
 
+const getIdentity = (callback) => {
+  const sts = new AWS.STS();
+  sts.getCallerIdentity({}, (err, result) => {
+    if (err) return callback(err);
+    data.accountId = result.Account;
+    callback(null);
+  })
+};
 
-let clean = (callback) => {
+
+const clean = (callback) => {
   fancy.info('clean...');
 
   fs.remove(path.join(process.cwd(), 'dist'), (err) => {
@@ -74,7 +83,7 @@ let clean = (callback) => {
 //   });
 // };
 
-let npm = (callback) => {
+const npm = (callback) => {
   fancy.info('npm...');
 
   if (data.localNodeModules) {
@@ -115,7 +124,7 @@ let npm = (callback) => {
   }
 };
 
-let envFile = (callback) => {
+const envFile = (callback) => {
   fancy.info('checking for .env file for:', data.environment);
   //concat environment specific .env file if there is one
   let targetedEnv = path.join(data.folderPath, '.env.' + data.environment);
@@ -134,7 +143,7 @@ let envFile = (callback) => {
   }
 };
 
-let copyFiles = (callback) => {
+const copyFiles = (callback) => {
   fancy.info('copyFiles...');
 
   if (!data.dependencies) return callback(null);
@@ -168,7 +177,7 @@ let copyFiles = (callback) => {
 };
 
 
-let processGlobs = (callback) => {
+const processGlobs = (callback) => {
   fancy.info('processGlobs...');
 
   async.each(data.globs, (spec, globCallback) => {
@@ -213,7 +222,7 @@ let processGlobs = (callback) => {
   });
 };
 
-let copyFunction = (callback) => {
+const copyFunction = (callback) => {
   fancy.info('copyFunction...');
 
   let functionFile = path.join(data.folderPath, data.functionName + '.js');
@@ -263,10 +272,7 @@ let copyFunction = (callback) => {
   callback(null);
 };
 
-
-
-
-let zipFiles = (callback) => {
+const zipFiles = (callback) => {
   fancy.info('zipFiles...');
 
   if (process.platform !== 'win32') {
@@ -308,20 +314,20 @@ let zipFiles = (callback) => {
   }
 };
 
-let runFunction = (callback) => {
+const runFunction = (callback) => {
   fancy.info('runFunction...');
 
-  var startTime = new Date();
-  var timeout; 
+  let startTime = new Date();
+  let timeout; 
   
-  var functionFile = path.join(data.distPath, data.functionName + '.js');
+  let functionFile = path.join(data.distPath, data.functionName + '.js');
   if (!fs.existsSync(functionFile)) {
     console.log('Could not find function:', functionFile);
     console.log('Make sure you are using `lamb run` from your project root directory.');
     process.exit();
   }
 
-  var funcData = require(path.join(data.folderPath, 'lambinator.json'));
+  let funcData = require(path.join(data.folderPath, 'lambinator.json'));
   timeout = funcData.timeout ? (funcData.timeout * 1000) : 300000;
 
   //change working directory
@@ -338,7 +344,7 @@ let runFunction = (callback) => {
   process.env.lambinator = true;
 
   //mock context
-  var context = {
+  let context = {
 
     done: function(error, data) {
       if (error) {
@@ -371,7 +377,7 @@ let runFunction = (callback) => {
     try {
       //call custom script and pass in mock context
       console.log('working dir:', process.cwd());
-      var reqScript = process.cwd() + '/' + funcData.customScript;
+      let reqScript = process.cwd() + '/' + funcData.customScript;
       console.log('requiring script:', reqScript);
       require(reqScript)(context);
     }
@@ -381,7 +387,7 @@ let runFunction = (callback) => {
   }
   else {
     //get mock event
-    var evt = funcData.testEvents[data.testEvent || funcData.defaultEvent];
+    let evt = funcData.testEvents[data.testEvent || funcData.defaultEvent];
     if (!evt) {
       console.log('Could not find a mock event named "' + (testEvent || funcData.defaultEvent) + '"');
       process.exit();
@@ -391,7 +397,7 @@ let runFunction = (callback) => {
     //spin it up using mock event
     fancy.info('running function...');
     try {
-      var funcToRun = require(process.cwd() + '/' + data.functionName);
+      let funcToRun = require(process.cwd() + '/' + data.functionName);
       funcToRun.handler(evt, context, context.done);
     }
     catch (err) {
@@ -403,41 +409,22 @@ let runFunction = (callback) => {
   }
 }
 
-let upload = (callback) => {
+const upload = (callback) => {
   fancy.info('upload...');
+
+  const functionName = data.envPrefixes ? data.environment + '-' + data.functionName : data.functionName;
+  data.functionArn = `arn:aws:lambda:${data.region}:${data.accountId}:function:${functionName}`;
+  
+  // for backwards compatibility, see if roleArn is already specified
+  if (!data.roleArn && data.roleName) {
+    data.roleArn = `arn:aws:iam::${data.accountId}:role/${data.roleName}`;
+  }
 
   //set region from lambinator.config:region
   AWS.config.update({region:data.region});
   AWS.config.apiVersions = {lambda: '2015-03-31'};
-  let lambda;
+  const lambda = new AWS.Lambda();
 
-  //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
-  let envPath = path.join(data.distPath, '.env');
-  if (fs.existsSync(envPath)) {
-    fancy.info('.env file exists, checking for AWS credentials...');
-    require('dotenv').load({path: envPath});
-    if (process.env.accessKeyId && process.env.secretAccessKey && process.env.region) {
-      fancy.info('using .env for deployment credentials...');
-      lambda = new AWS.Lambda({
-        accessKeyId: process.env.accessKeyId,
-        secretAccessKey: process.env.secretAccessKey,
-        region: process.env.region
-      });
-    }
-    else {
-      fancy.info('.env has no AWS credentials - using shared credentials file (http://j.mp/awscredentials)...');
-      lambda = new AWS.Lambda();
-    }
-  }
-  else {
-    fancy.info('No .env file - using shared credentials file (http://j.mp/awscredentials)...');
-    lambda = new AWS.Lambda();
-  }
-
-  let functionName = data.environment + '-' + data.functionName;
-  if (!data.envPrefixes) {
-    functionName = data.functionName;
-  }
   let zipFile = data.distPath + '.zip';
 
   let createLambda = function() {
@@ -510,7 +497,7 @@ let upload = (callback) => {
     });
   }
 
-  let startUpload = () => {
+  const startUpload = () => {
     fancy.info('Getting current lambda function info (if any)...');
     lambda.getFunction({FunctionName: functionName}, function(err, result) {
       if (err) {
@@ -535,7 +522,75 @@ let upload = (callback) => {
   startUpload();
 };
 
-let main = (functionName, environment, options) => {
+const createSns = (callback) => {
+  if (!data.snsTopic) return callback(null);
+  
+  // create topic if it does not exist
+  const sns = new AWS.SNS();
+  const topicName = data.envPrefixes ? data.environment + '-' + data.snsTopic : data.snsTopic;
+  data.topicArn = `arn:aws:sns:${data.region}:${data.accountId}:${topicName}`;
+
+  sns.getTopicAttributes({TopicArn: data.topicArn}, (err, topic) => {
+    if (err) {
+      if (err.statusCode == '404') {
+        console.log('Creating SNS topic:', data.topicArn);
+        sns.createTopic({Name: topicName}, (err, topic) => {
+          if (err) return callback(err);
+          console.log('Topic created:', topic);
+          return callback(null);
+        });
+      }
+      else {
+        return callback(err);
+      }
+    }
+    else {
+      console.log('SNS topic exists:', data.topicArn);
+      return callback(null);
+    }
+  });
+};
+
+const wireSns = (callback) => {
+  if (!data.snsTopic) return callback(null);
+
+  console.log('checking for SNS topic subscription...');
+  const sns = new AWS.SNS();
+  const subscribeFunction = (cb) => {
+    const subscribeParams = {
+      TopicArn: data.topicArn,
+      Protocol: 'lambda',
+      Endpoint: data.functionArn
+    };
+
+    sns.subscribe(subscribeParams, (err, result) => {
+      if(err) return cb(err);
+      else return cb(null);
+    });
+  };
+
+  sns.listSubscriptionsByTopic({TopicArn: data.topicArn}, (err, result) => {
+    if (err) return callback(err);
+    if(result.Subscriptions.length == 0) {
+      console.log('No subscription yet -- subscribing...');
+      subscribeFunction(callback);
+    }
+    else {
+      // see if this function is in the list of subscribers
+      const exists = (result.Subscriptions.filter(f => f.Endpoint == data.functionArn).length == 1);
+      if (exists) {
+        console.log('Subscription exists.');
+        return callback(null);        
+      }
+      else {
+        console.log('No subscription yet -- subscribing...');
+        subscribeFunction(callback);
+      }
+    }
+  });
+};
+
+const main = (functionName, environment, options) => {
   fancy.info('main...');
 
   let folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
@@ -568,7 +623,7 @@ let main = (functionName, environment, options) => {
     functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles];
   }
   else if (action == 'deploy') {
-    functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles, upload]; //, zipFiles];
+    functionsToRun = [getIdentity, envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles, upload, createSns, wireSns]; //, zipFiles];
   }
   else if (action == 'clean') {
     functionsToRun = [clean];
