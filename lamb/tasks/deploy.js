@@ -314,7 +314,8 @@ let runFunction = (callback) => {
   var startTime = new Date();
   var timeout; 
   
-  var functionFile = path.join(data.distPath, data.functionName + '.js');
+  console.log('data.runDir', data.runDir);
+  var functionFile = path.join(data.runDir, data.functionName + '.js');
   if (!fs.existsSync(functionFile)) {
     console.log('Could not find function:', functionFile);
     console.log('Make sure you are using `lamb run` from your project root directory.');
@@ -325,8 +326,8 @@ let runFunction = (callback) => {
   timeout = funcData.timeout ? (funcData.timeout * 1000) : 300000;
 
   //change working directory
-  if (!fs.existsSync(data.distPath)) {
-    console.log('Could not find a function to run at:', data.distPath);
+  if (!fs.existsSync(data.runDir)) {
+    console.log('Could not find a function to run at:', data.runDir);
     console.log('Make sure you are using `lamb run` from your project root directory.');
     process.exit();
   }
@@ -562,7 +563,8 @@ let main = (functionName, environment, options) => {
     functionsToRun = [upload];
   }
   else if (action == 'run') {
-    functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, runFunction];
+    // functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, runFunction];
+    functionsToRun = [copyFunction, runFunction];
   }
   else if (action == 'zip') {
     functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles];
