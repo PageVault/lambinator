@@ -9,7 +9,7 @@ const ncp          = require('ncp');
 const recursive    = require('recursive-readdir');
 const gulp         = require('gulp');
 const install      = require('gulp-install');
-const gutil        = require('gulp-util');
+const fancy        = require('fancy-log');
 const next         = require('gulp-next');
 const pkg          = require(process.cwd() + '/package.json');
 const spawn        = require('child_process').spawn;
@@ -23,9 +23,18 @@ let data = {
   environment: null   //e.g. staging
 };
 
+const getIdentity = (callback) => {
+  const sts = new AWS.STS();
+  sts.getCallerIdentity({}, (err, result) => {
+    if (err) return callback(err);
+    data.accountId = result.Account;
+    callback(null);
+  })
+};
 
-let clean = (callback) => {
-  gutil.log('clean...');
+
+const clean = (callback) => {
+  fancy.info('clean...');
 
   fs.remove(path.join(process.cwd(), 'dist'), (err) => {
     if (err) return callback(err);
@@ -74,11 +83,11 @@ let clean = (callback) => {
 //   });
 // };
 
-let npm = (callback) => {
-  gutil.log('npm...');
+const npm = (callback) => {
+  fancy.info('npm...');
 
   if (data.localNodeModules) {
-    gutil.log('copying NPM modules for deployment...');
+    fancy.info('copying NPM modules for deployment...');
     fs.copySync(
       path.join(process.cwd(), 'node_modules'),
       path.join(data.distPath, 'node_modules')
@@ -86,7 +95,7 @@ let npm = (callback) => {
     callback(null);
   }
   else {
-    gutil.log('...creating package.json for installing package dependencies...');
+    fancy.info('...creating package.json for installing package dependencies...');
     let pkg = require(path.join(process.cwd(), 'package.json'));
     // search for `require` statements in function file to determine what packages are needed at runtime
     let re = /require\(["'].*["']\)/g;
@@ -106,7 +115,7 @@ let npm = (callback) => {
     let packagePath = path.join(data.distPath, 'package.json');
     let packages = {dependencies: dependencies};
     fs.writeFileSync(packagePath, JSON.stringify(packages, null, 2));
-    gutil.log('installing function packages from NPM...');
+    fancy.info('installing function packages from NPM...');
     return gulp.src(packagePath)
       .pipe(install({ production: true }))
       .pipe(next(function() {
@@ -115,27 +124,27 @@ let npm = (callback) => {
   }
 };
 
-let envFile = (callback) => {
-  gutil.log('checking for .env file for:', data.environment);
+const envFile = (callback) => {
+  fancy.info('checking for .env file for:', data.environment);
   //concat environment specific .env file if there is one
   let targetedEnv = path.join(data.folderPath, '.env.' + data.environment);
   let finalEnv = path.join(data.distPath, '.env');
   let hasTargetedEnv = fs.existsSync(targetedEnv);
 
   if (!hasTargetedEnv) {
-    gutil.log('no .env found for ' + data.environment);
+    fancy.info('no .env found for ' + data.environment);
     return callback(null);
   }
   else {
-    gutil.log('found .env.' + data.environment);
+    fancy.info('found .env.' + data.environment);
     fs.copy(targetedEnv, finalEnv, callback);
     // fs.createReadStream(targetedEnv).pipe(fs.createWriteStream(finalEnv));
     // callback(null);
   }
 };
 
-let copyFiles = (callback) => {
-  gutil.log('copyFiles...');
+const copyFiles = (callback) => {
+  fancy.info('copyFiles...');
 
   if (!data.dependencies) return callback(null);
 
@@ -153,12 +162,12 @@ let copyFiles = (callback) => {
     else {
       //look in function directory for file
       if (fs.existsSync(functionDependency)) {
-        gutil.log('Using locally provided dependency:', functionDependency);
+        fancy.info('Using locally provided dependency:', functionDependency);
         fs.copySync(functionDependency, path.join(data.distPath, dependency));
       }
       //look in global dependencies folder
       else if (fs.existsSync(globalDependency)) {
-        gutil.log('Using global dependency:', globalDependency);
+        fancy.info('Using global dependency:', globalDependency);
         fs.copySync(globalDependency, path.join(data.distPath, dependency));
       }
     }
@@ -168,8 +177,8 @@ let copyFiles = (callback) => {
 };
 
 
-let processGlobs = (callback) => {
-  gutil.log('processGlobs...');
+const processGlobs = (callback) => {
+  fancy.info('processGlobs...');
 
   async.each(data.globs, (spec, globCallback) => {
 
@@ -190,7 +199,7 @@ let processGlobs = (callback) => {
             fs.ensureDir(path.dirname(targetPath), (err) => {
               if (err) return matchesCallback(err);
 
-              gutil.log(targetPath);
+              fancy.info(targetPath);
               fs.copy(match, targetPath, matchesCallback);
             });
           }
@@ -213,8 +222,8 @@ let processGlobs = (callback) => {
   });
 };
 
-let copyFunction = (callback) => {
-  gutil.log('copyFunction...');
+const copyFunction = (callback) => {
+  fancy.info('copyFunction...');
 
   let functionFile = path.join(data.folderPath, data.functionName + '.js');
   let outputFile = path.join(data.distPath, data.functionName + '.js');
@@ -239,7 +248,7 @@ let copyFunction = (callback) => {
   else {
     data.runDir = data.folderPath;
     // copy function itself
-    gutil.log('copying function:', functionFile);
+    fancy.info('copying function:', functionFile);
     fs.copySync(functionFile, outputFile);
   }
     
@@ -247,7 +256,7 @@ let copyFunction = (callback) => {
   let settingsFile =  data.folderPath + '/settings';
   if (!data.envPrefixes) settingsFile += '.json';
   else settingsFile += '-' + data.environment + '.json'; 
-  gutil.log('settings file:', settingsFile);
+  fancy.info('settings file:', settingsFile);
 
   if (fs.existsSync(settingsFile)) {
     //read settings file for environment
@@ -255,7 +264,7 @@ let copyFunction = (callback) => {
     //add "env"
     s.env = data.environment;
     //write to settings.json
-    gutil.log('write settings-' + data.environment + '.json to settings.json');
+    fancy.info('write settings-' + data.environment + '.json to settings.json');
     fs.writeFileSync(path.join(data.runDir, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
     fs.writeFileSync(path.join(data.distPath, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
   }
@@ -263,11 +272,8 @@ let copyFunction = (callback) => {
   callback(null);
 };
 
-
-
-
-let zipFiles = (callback) => {
-  gutil.log('zipFiles...');
+const zipFiles = (callback) => {
+  fancy.info('zipFiles...');
 
   if (process.platform !== 'win32') {
     //use native zip
@@ -308,11 +314,11 @@ let zipFiles = (callback) => {
   }
 };
 
-let runFunction = (callback) => {
-  gutil.log('runFunction...');
+const runFunction = (callback) => {
+  fancy.info('runFunction...');
 
-  var startTime = new Date();
-  var timeout; 
+  let startTime = new Date();
+  let timeout; 
   
   console.log('data.runDir', data.runDir);
   var functionFile = path.join(data.runDir, data.functionName + '.js');
@@ -322,7 +328,7 @@ let runFunction = (callback) => {
     process.exit();
   }
 
-  var funcData = require(path.join(data.folderPath, 'lambinator.json'));
+  let funcData = require(path.join(data.folderPath, 'lambinator.json'));
   timeout = funcData.timeout ? (funcData.timeout * 1000) : 300000;
 
   //change working directory
@@ -339,7 +345,7 @@ let runFunction = (callback) => {
   process.env.lambinator = true;
 
   //mock context
-  var context = {
+  let context = {
 
     done: function(error, data) {
       if (error) {
@@ -372,7 +378,7 @@ let runFunction = (callback) => {
     try {
       //call custom script and pass in mock context
       console.log('working dir:', process.cwd());
-      var reqScript = process.cwd() + '/' + funcData.customScript;
+      let reqScript = process.cwd() + '/' + funcData.customScript;
       console.log('requiring script:', reqScript);
       require(reqScript)(context);
     }
@@ -382,21 +388,21 @@ let runFunction = (callback) => {
   }
   else {
     //get mock event
-    var evt = funcData.testEvents[data.testEvent || funcData.defaultEvent];
+    let evt = funcData.testEvents[data.testEvent || funcData.defaultEvent];
     if (!evt) {
       console.log('Could not find a mock event named "' + (testEvent || funcData.defaultEvent) + '"');
       process.exit();
     }
-    gutil.log('mock event:', evt);
+    fancy.info('mock event:', evt);
 
     //spin it up using mock event
-    gutil.log('running function...');
+    fancy.info('running function...');
     try {
-      var funcToRun = require(process.cwd() + '/' + data.functionName);
+      let funcToRun = require(process.cwd() + '/' + data.functionName);
       funcToRun.handler(evt, context, context.done);
     }
     catch (err) {
-      gutil.log(gutil.colors.red('error running function'));
+      fancy.info(chalk.red('error running function'));
       console.log();
       console.log((err.stack) ? err.stack : err.toString());
       console.log();
@@ -404,45 +410,26 @@ let runFunction = (callback) => {
   }
 }
 
-let upload = (callback) => {
-  gutil.log('upload...');
+const upload = (callback) => {
+  fancy.info('upload...');
+
+  const functionName = data.envPrefixes ? data.environment + '-' + data.functionName : data.functionName;
+  data.functionArn = `arn:aws:lambda:${data.region}:${data.accountId}:function:${functionName}`;
+  
+  // for backwards compatibility, see if roleArn is already specified
+  if (!data.roleArn && data.roleName) {
+    data.roleArn = `arn:aws:iam::${data.accountId}:role/${data.roleName}`;
+  }
 
   //set region from lambinator.config:region
   AWS.config.update({region:data.region});
   AWS.config.apiVersions = {lambda: '2015-03-31'};
-  let lambda;
+  const lambda = new AWS.Lambda();
 
-  //use .env file to load permissions to use for Lambda execution, if a .env exists in the function folder
-  let envPath = path.join(data.distPath, '.env');
-  if (fs.existsSync(envPath)) {
-    gutil.log('.env file exists, checking for AWS credentials...');
-    require('dotenv').load({path: envPath});
-    if (process.env.accessKeyId && process.env.secretAccessKey && process.env.region) {
-      gutil.log('using .env for deployment credentials...');
-      lambda = new AWS.Lambda({
-        accessKeyId: process.env.accessKeyId,
-        secretAccessKey: process.env.secretAccessKey,
-        region: process.env.region
-      });
-    }
-    else {
-      gutil.log('.env has no AWS credentials - using shared credentials file (http://j.mp/awscredentials)...');
-      lambda = new AWS.Lambda();
-    }
-  }
-  else {
-    gutil.log('No .env file - using shared credentials file (http://j.mp/awscredentials)...');
-    lambda = new AWS.Lambda();
-  }
-
-  let functionName = data.environment + '-' + data.functionName;
-  if (!data.envPrefixes) {
-    functionName = data.functionName;
-  }
   let zipFile = data.distPath + '.zip';
 
   let createLambda = function() {
-    gutil.log('Updating function ' + functionName);
+    fancy.info('Updating function ' + functionName);
 
     let params = {
       Code: {
@@ -461,7 +448,7 @@ let upload = (callback) => {
 
     lambda.createFunction(params, function(err, result) {
       if (err) {
-        gutil.log(chalk.red('Error uploading ' + data.functionName), err);
+        fancy.info(chalk.red('Error uploading ' + data.functionName), err);
         callback(err);
       }
       else  {
@@ -476,11 +463,11 @@ let upload = (callback) => {
       ZipFile: fs.readFileSync(zipFile)
     };
 
-    gutil.log('Updating function ' + functionName + ' from ' + zipFile);
+    fancy.info('Updating function ' + functionName + ' from ' + zipFile);
 
     lambda.updateFunctionCode(params, function(err, result) {
       if (err) {
-        gutil.log(chalk.red('Error uploading ' + functionName), err);
+        fancy.info(chalk.red('Error uploading ' + functionName), err);
         callback(err);
       }
       else {
@@ -502,7 +489,7 @@ let upload = (callback) => {
 
         lambda.updateFunctionConfiguration(configParams, function(err, data) {
           if (err) {
-            gutil.log(chalk.red('Error updating function config for ' + functionName), err);
+            fancy.info(chalk.red('Error updating function config for ' + functionName), err);
             callback(err);
           }
           else callback(null);
@@ -511,8 +498,8 @@ let upload = (callback) => {
     });
   }
 
-  let startUpload = () => {
-    gutil.log('Getting current lambda function info (if any)...');
+  const startUpload = () => {
+    fancy.info('Getting current lambda function info (if any)...');
     lambda.getFunction({FunctionName: functionName}, function(err, result) {
       if (err) {
         if (err.statusCode === 404) {
@@ -522,7 +509,7 @@ let upload = (callback) => {
         else {
           let warning = 'AWS API request failed. '
           warning += 'Check your AWS credentials and permissions.'
-          gutil.log(chalk.yellow(warning), JSON.stringify(lambda, null, 2));
+          fancy.info(chalk.yellow(warning), JSON.stringify(lambda, null, 2));
           callback(new Error(warning));
         }
       }
@@ -536,8 +523,76 @@ let upload = (callback) => {
   startUpload();
 };
 
-let main = (functionName, environment, options) => {
-  gutil.log('main...');
+const createSns = (callback) => {
+  if (!data.snsTopic) return callback(null);
+  
+  // create topic if it does not exist
+  const sns = new AWS.SNS();
+  const topicName = data.envPrefixes ? data.environment + '-' + data.snsTopic : data.snsTopic;
+  data.topicArn = `arn:aws:sns:${data.region}:${data.accountId}:${topicName}`;
+
+  sns.getTopicAttributes({TopicArn: data.topicArn}, (err, topic) => {
+    if (err) {
+      if (err.statusCode == '404') {
+        console.log('Creating SNS topic:', data.topicArn);
+        sns.createTopic({Name: topicName}, (err, topic) => {
+          if (err) return callback(err);
+          console.log('Topic created:', topic);
+          return callback(null);
+        });
+      }
+      else {
+        return callback(err);
+      }
+    }
+    else {
+      console.log('SNS topic exists:', data.topicArn);
+      return callback(null);
+    }
+  });
+};
+
+const wireSns = (callback) => {
+  if (!data.snsTopic) return callback(null);
+
+  console.log('checking for SNS topic subscription...');
+  const sns = new AWS.SNS();
+  const subscribeFunction = (cb) => {
+    const subscribeParams = {
+      TopicArn: data.topicArn,
+      Protocol: 'lambda',
+      Endpoint: data.functionArn
+    };
+
+    sns.subscribe(subscribeParams, (err, result) => {
+      if(err) return cb(err);
+      else return cb(null);
+    });
+  };
+
+  sns.listSubscriptionsByTopic({TopicArn: data.topicArn}, (err, result) => {
+    if (err) return callback(err);
+    if(result.Subscriptions.length == 0) {
+      console.log('No subscription yet -- subscribing...');
+      subscribeFunction(callback);
+    }
+    else {
+      // see if this function is in the list of subscribers
+      const exists = (result.Subscriptions.filter(f => f.Endpoint == data.functionArn).length == 1);
+      if (exists) {
+        console.log('Subscription exists.');
+        return callback(null);        
+      }
+      else {
+        console.log('No subscription yet -- subscribing...');
+        subscribeFunction(callback);
+      }
+    }
+  });
+};
+
+const main = (functionName, environment, options) => {
+  fancy.info('main...');
 
   let folderPath = path.join(process.cwd(), '/functions', '/' + functionName);
   let action = options.action;
@@ -556,7 +611,7 @@ let main = (functionName, environment, options) => {
   if (data.defaultEvent) delete data.defaultEvent;
   if (data.defaultEnv) delete data.defaultEnv;
 
-  gutil.log('data', data);
+  fancy.info('data', data);
 
   let functionsToRun;
   if (action == 'upload') {
@@ -570,7 +625,7 @@ let main = (functionName, environment, options) => {
     functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles];
   }
   else if (action == 'deploy') {
-    functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles, upload]; //, zipFiles];
+    functionsToRun = [getIdentity, envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles, upload, createSns, wireSns]; //, zipFiles];
   }
   else if (action == 'clean') {
     functionsToRun = [clean];
@@ -579,10 +634,10 @@ let main = (functionName, environment, options) => {
   //let the water fall baby
   async.waterfall(functionsToRun, function(err, results) {
     if (err) {
-      gutil.log('ERROR', err);
+      fancy.info('ERROR', err);
     }
     else {
-      gutil.log('Done!');
+      fancy.info('Done!');
     }
   });
 };

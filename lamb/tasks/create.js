@@ -4,7 +4,7 @@ var gulp          = require('gulp')
     , fs          = require('fs-extra')
     , chalk       = require('chalk')
     , path        = require('path')
-    , gutil       = require('gulp-util')
+    , fancy       = require('fancy-log')
     ;
 
 var main = function(func) {
@@ -18,6 +18,8 @@ var main = function(func) {
   //copy files and replace template text
   gulp.src([filesDir + '/*.json', filesDir + '/.env.sample', filesDir + '/readme.md', '!' + filesDir + '/function-name.js'])
     .pipe(replace('{{function-name}}', func))
+    .pipe(replace('{{created-date}}', new Date()))
+    .pipe(replace('{{default-role-name}}', 'lambda_s3_exec_role'))
     .pipe(gulp.dest('./functions/' + func));
 
   //copy main function file and rename
@@ -26,7 +28,7 @@ var main = function(func) {
     .pipe(gulp.dest('./functions/' + func));
 
 
-  gutil.log(func + ' created at ' + path.resolve('./functions/' + func));
+  fancy.info(func + ' created at ' + path.resolve('./functions/' + func));
 };
 
 module.exports = main;
