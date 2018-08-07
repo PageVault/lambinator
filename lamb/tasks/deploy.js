@@ -1,19 +1,14 @@
-'use strict';
-
 const AWS          = require('aws-sdk');
 const fs           = require('fs-extra');
 const path         = require('path');
 const async        = require('async');
 const chalk        = require('chalk');
-const ncp          = require('ncp');
 const recursive    = require('recursive-readdir');
 const gulp         = require('gulp');
 const install      = require('gulp-install');
 const fancy        = require('fancy-log');
 const next         = require('gulp-next');
-const pkg          = require(process.cwd() + '/package.json');
 const spawn        = require('child_process').spawn;
-const Promise      = require('bluebird');
 const glob         = require('glob');
 const babel        = require('babel-core');
 
@@ -42,46 +37,23 @@ const clean = (callback) => {
   });
 };
 
-// let prep = (callback) => {
-//   gutil.log('prep...');
-//   fs.ensureDir(data.distPath, function(err) { callback(err); });
-//   gutil.log('creating package.json for installing package dependencies...');
-//   let pkg = require(path.join(process.cwd(), 'package.json'));
-//   let re = /require\(["'].*["']\)/g;
-//   let functionFile = path.join(data.folderPath, data.functionName + '.js');
-//   let text = fs.readFileSync(functionFile, {encoding:'utf-8'});
-//   let reqs = text.match(re);
-//   let dependencies = {};
+const yarn = (callback) => {
+  let y = spawn('yarn');
 
-//   reqs.forEach(function (r) {
-//     let m = r.replace(/\'/g, '').replace(/\"/g, '').replace('require(', '').replace(')', '');
-//     if (pkg.dependencies[m]) {
-//       dependencies[m] = pkg.dependencies[m];
-//     }
-//   });
+  y.stdout.on('data', (data) => {
+    gutil.log(data.toString());
+  });
 
-//   let packagePath = path.join(data.distPath, 'package.json');
-//   let packages = {dependencies: dependencies};
-//   fs.writeFile(packagePath, JSON.stringify(packages, null, 2), callback);
-// };
+  y.stderr.on('err', (err) => {
+    callback(err);
+  });
 
-// let yarn = (callback) => {
-//   let y = spawn('yarn');
-
-//   y.stdout.on('data', (data) => {
-//     gutil.log(data.toString());
-//   });
-
-//   y.stderr.on('err', (err) => {
-//     callback(err);
-//   });
-
-//   y.on('close', (code) => {
-//     // let tsHash = tsData.toString();
-//     // console.log('tsHash', tsHash);
-//     callback(null);
-//   });
-// };
+  y.on('close', (code) => {
+    // let tsHash = tsData.toString();
+    // console.log('tsHash', tsHash);
+    callback(null);
+  });
+};
 
 const npm = (callback) => {
   fancy.info('npm...');
