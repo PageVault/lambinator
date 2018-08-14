@@ -8,7 +8,6 @@ const gulp         = require('gulp');
 const install      = require('gulp-install');
 const fancy        = require('fancy-log');
 const next         = require('gulp-next');
-const spawn        = require('child_process').spawn;
 const glob         = require('glob');
 const babel        = require('babel-core');
 
@@ -34,24 +33,6 @@ const clean = (callback) => {
   fs.remove(path.join(process.cwd(), 'dist'), (err) => {
     if (err) return callback(err);
     fs.ensureDir(data.distPath, (err) => callback(err));
-  });
-};
-
-const yarn = (callback) => {
-  let y = spawn('yarn');
-
-  y.stdout.on('data', (data) => {
-    gutil.log(data.toString());
-  });
-
-  y.stderr.on('err', (err) => {
-    callback(err);
-  });
-
-  y.on('close', (code) => {
-    // let tsHash = tsData.toString();
-    // console.log('tsHash', tsHash);
-    callback(null);
   });
 };
 
@@ -194,36 +175,7 @@ const processGlobs = (callback) => {
   });
 };
 
-const copyFunction = (callback) => {
-  fancy.info('copyFunction...');
-
-  let functionFile = path.join(data.folderPath, data.functionName + '.js');
-  let outputFile = path.join(data.distPath, data.functionName + '.js');
-
-  // transform function
-  if(data.runtime == 'babel-nodejs6.10') {
-    data.runDir = data.distPath;
-    // let output = babel.transformFileSync(functionFile, {plugins: ["transform-async-to-generator"]}).code;
-    let output = babel.transformFileSync(functionFile, {
-      presets: [
-        ["env", {
-          "targets": {
-            "node": ["6.10"]
-          }
-        }]
-      ]
-    }).code;
-    
-    fs.writeFileSync(outputFile, output, {encoding: 'utf-8'});
-    data.runtime = 'nodejs6.10';
-  }
-  else {
-    data.runDir = data.folderPath;
-    // copy function itself
-    fancy.info('copying function:', functionFile);
-    fs.copySync(functionFile, outputFile);
-  }
-    
+const copySettings = (callback) => {
   //settings
   let settingsFile =  data.folderPath + '/settings';
   if (!data.envPrefixes) settingsFile += '.json';
@@ -237,10 +189,26 @@ const copyFunction = (callback) => {
     s.env = data.environment;
     //write to settings.json
     fancy.info('write settings-' + data.environment + '.json to settings.json');
-    fs.writeFileSync(path.join(data.runDir, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
-    fs.writeFileSync(path.join(data.distPath, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
+    try {
+      fs.writeFileSync(path.join(data.runDir, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
+      fs.writeFileSync(path.join(data.distPath, 'settings.json'), JSON.stringify(s, null, 2), {encoding: 'utf8'});
+    }
+    catch(err) {}
   }
 
+  callback(null);
+}
+
+const copyFunction = (callback) => {
+  fancy.info('copyFunction...');
+
+  let functionFile = path.join(data.folderPath, data.functionName + '.js');
+  let outputFile = path.join(data.distPath, data.functionName + '.js');
+
+  // copy function itself
+  fancy.info('copying function:', functionFile);
+  fs.copySync(functionFile, outputFile);
+    
   callback(null);
 };
 
@@ -381,6 +349,13 @@ const runFunction = (callback) => {
     }
   }
 }
+
+const uploadS3 = (callback) => {
+  const bucketName = process.env.LAMBINATOR_BUCKET;
+  if (!bucketName) callback(new Error('LAMBINATOR_BUCKET environment variable must be defined'));
+  const lambinatorKeyPrefix = process.env.LAMBINATOR_KEY_PREFIX ? process.env.LAMBINATOR_KEY_PREFIX + '/' : '';
+  const key = `${lambinatorKeyPrefix}${functionName}/${env}/${version}/package.zip`
+};
 
 const upload = (callback) => {
   fancy.info('upload...');
@@ -563,6 +538,11 @@ const wireSns = (callback) => {
   });
 };
 
+const foo = (callback) => {
+  fancy.info('foo');
+  callback();
+}
+
 const main = (functionName, environment, options) => {
   fancy.info('main...');
 
@@ -573,6 +553,7 @@ const main = (functionName, environment, options) => {
   data = JSON.parse(fs.readFileSync(path.join(folderPath, 'lambinator.json'), {encoding:'utf-8'}));
   data.functionName = functionName;
   data.folderPath = folderPath;
+  data.runDir = data.folderPath;
   data.distPath = path.join(process.cwd(), '/dist', functionName);
   data.environment = !data.envPrefixes ? 'production' : environment;
   data.localNodeModules = (options && options.localNodeModules) || false;
@@ -586,21 +567,24 @@ const main = (functionName, environment, options) => {
   fancy.info('data', data);
 
   let functionsToRun;
-  if (action == 'upload') {
-    functionsToRun = [upload];
-  }
-  else if (action == 'run') {
-    // functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, runFunction];
-    functionsToRun = [copyFunction, runFunction];
-  }
-  else if (action == 'zip') {
-    functionsToRun = [envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles];
-  }
-  else if (action == 'deploy') {
-    functionsToRun = [getIdentity, envFile, npm, copyFiles, processGlobs, copyFunction, zipFiles, upload, createSns, wireSns]; //, zipFiles];
-  }
-  else if (action == 'clean') {
-    functionsToRun = [clean];
+  switch(action) {
+    case 'upload':
+      functionsToRun = [upload];
+      break;
+    case 'run':
+      functionsToRun = [copySettings, runFunction];
+      break;
+    case 'zip':
+      functionsToRun = [envFile, npm, copyFiles, processGlobs, copySettings, copyFunction, zipFiles];
+      break;
+    case 'deploy':
+      functionsToRun = [getIdentity, envFile, npm, copyFiles, processGlobs, copySettings, copyFunction, zipFiles, upload, createSns, wireSns]; //, zipFiles];
+      break;
+    case 'clean':
+      functionsToRun = [clean];
+      break;
+    default:
+      break;
   }
 
   //let the water fall baby

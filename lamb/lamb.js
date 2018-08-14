@@ -38,7 +38,7 @@ program
   .action(function (func, options) {
     var testEvent = options.mock;
     var env = options.env || 'staging';
-    logHeader(func, env, 'running function locally', function() { tasks.deploy(func, env, {action: 'run', testEvent: testEvent}); });
+    logHeader(func, env, 'running function locally', function() { tasks.exec(func, env, {action: 'run', testEvent: testEvent}); });
   });
 
 program
@@ -47,7 +47,7 @@ program
   .option("-e, --env [environment]", "Which environment to deploy to")
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, env, 'deploying function', function() { tasks.deploy(func, env, { action: 'deploy'}); });
+    logHeader(func, env, 'deploying function', function() { tasks.exec(func, env, { action: 'deploy'}); });
   });
 
 program
@@ -58,7 +58,7 @@ program
   .option("-l, --local-node-modules", "Uses cached node_modules instead of `npm install`")
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, env, 'zipping function', function() { tasks.deploy(func, env, { action: 'zip', localNodeModules: options.localNodeModules }); });
+    logHeader(func, env, 'zipping function', function() { tasks.exec(func, env, { action: 'zip', localNodeModules: options.localNodeModules }); });
   });
 
 program
@@ -67,7 +67,7 @@ program
   .option("-e, --env [environment]", "Which environment to deploy to")
   .action(function (func, options) {
     var env = options.env || 'staging';
-    logHeader(func, env, 'deploying function', function() { tasks.deploy(func, env, { action: 'upload'}); });
+    logHeader(func, env, 'deploying function', function() { tasks.exec(func, env, { action: 'upload'}); });
   });
 
 program
@@ -75,25 +75,5 @@ program
   .action(function(env){
     program.outputHelp();
   });
-
-/*
-program
-  .command('list')
-  .description('Lists functions registered in the Lambinator Function Registry')
-  .action(function () {
-    logHeader();
-    console.log(chalk.white.bold('listing registered functions...'));
-    tasks.list();
-  });
-
-program
-  .command('install <function-name>')
-  .description('Installs a function by name from the registry for local editing and eventual deployment')
-  .action(function (func) {
-    logHeader();
-    console.log(chalk.white.bold('installing function:'), func);
-    tasks.install(func);
-  });
-*/
 
 program.parse(process.argv);
