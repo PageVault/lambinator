@@ -23,7 +23,7 @@ program.version(version);
 program
   .command('create <function-name>')
   .alias('new')
-  .description('Creates a new Lambda function in /functions, including a function stub, lambinator.json file, and .env.sample file')
+  .description('Creates a new Lambda function in /functions, including a function stub, lambinator.json file')
   .action(function (func) {
     logHeader(func, null, 'creating new function', function() { tasks.create(func); });
   });
