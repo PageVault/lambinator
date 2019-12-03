@@ -1,6 +1,6 @@
 {
   "name": "lambinator",
-  "version": "0.24.1",
+  "version": "0.24.0",
   "description": "A template project for managing a suite of AWS Lambda functions",
   "main": "./lamb/lamb.js",
   "scripts": {
@@ -40,7 +40,6 @@
     "es6-promise": "^4.2.8",
     "fancy-log": "^1.3.3",
     "fs-extra": "^8.1.0",
-    "fsevents": "^2.1.2",
     "get-value": "^3.0.1",
     "glob": "^7.1.6",
     "gulp": "^4.0.2",
