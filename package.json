@@ -1,6 +1,6 @@
 {
   "name": "lambinator",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "description": "A template project for managing a suite of AWS Lambda functions",
   "main": "./lamb/lamb.js",
   "scripts": {
