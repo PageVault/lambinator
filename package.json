@@ -30,34 +30,19 @@
   "dependencies": {
     "async": "^3.1.0",
     "aws-sdk": "^2.583.0",
-    "babel-cli": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-es2015": "^6.24.1",
     "bluebird": "^3.7.2",
     "chalk": "^3.0.0",
     "commander": "^4.0.1",
-    "dotenv": "^8.2.0",
-    "es6-promise": "^4.2.8",
     "fancy-log": "^1.3.3",
     "fs-extra": "^8.1.0",
-    "get-value": "^3.0.1",
     "glob": "^7.1.6",
     "gulp": "^4.0.2",
     "gulp-install": "^1.1.0",
     "gulp-next": "^1.0.9",
     "gulp-rename": "^1.4.0",
     "gulp-replace": "^1.0.0",
-    "ncp": "^2.0.0",
     "node-zip": "^1.1.1",
     "recursive-readdir": "^2.2.2",
-    "require-dir": "^1.2.0",
-    "tabtab": "^3.0.2"
-  },
-  "devDependencies": {
-    "babel-core": "^6.26.3",
-    "babel-plugin-transform-async-to-generator": "^6.24.1",
-    "babel-preset-node6": "^11.0.0",
-    "fsevents": "^2.1.2",
-    "short-uuid": "^3.1.1"
+    "require-dir": "^1.2.0"
   }
 }

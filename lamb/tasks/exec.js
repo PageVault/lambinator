@@ -9,7 +9,6 @@ const install      = require('gulp-install');
 const fancy        = require('fancy-log');
 const next         = require('gulp-next');
 const glob         = require('glob');
-const babel        = require('babel-core');
 
 let data = {
   folderPath: null,   //e.g. ./functions/hello-world
