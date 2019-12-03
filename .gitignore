@@ -33,3 +33,5 @@ node_modules
 .vscode
 dist
 functions
+
+package-lock.json
