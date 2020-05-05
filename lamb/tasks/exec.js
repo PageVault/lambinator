@@ -384,7 +384,7 @@ const upload = (callback) => {
       FunctionName: functionName,
       Handler: data.handler,
       Role: data.roleArn,
-      Runtime: data.runtime || 'nodejs4.3',
+      Runtime: data.runtime || 'nodejs12.x',
       Description: data.description,
       MemorySize: data.memorySize,
       Timeout: data.timeout
@@ -422,11 +422,10 @@ const upload = (callback) => {
           FunctionName: functionName,
           Handler: data.handler,
           Role: data.roleArn,
-          Runtime: data.runtime || 'nodejs4.3',
+          Runtime: data.runtime || 'nodejs12.x',
           Description: data.description,
           MemorySize: data.memorySize,
           Timeout: data.timeout
-          // Runtime: data.runtime || 'nodejs4.3'
         };
 
         if (data.VpcConfig) configParams.VpcConfig = data.VpcConfig;
